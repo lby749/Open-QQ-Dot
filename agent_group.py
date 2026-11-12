@@ -23,6 +23,7 @@ ROLE_PRESETS = (
 )
 MODES = ("sequential", "parallel")
 MAX_MEMORY = 300
+MAX_QQ_BOTS = 5
 # Brief file transactions only; use per-room locks if concurrent room throughput requires it.
 _write_lock = RLock()
 
@@ -111,6 +112,8 @@ def add_member(base, owner, room_id, provider, name="", role="", model="", templ
               "role": (role or ROLE_PRESETS[1][1]).strip()[:180],
               "model": str(model or "").strip()[:120],
               "template": str(template or "").strip()[:32]}
+    if room.get('entry_kind') == 'group' and len(active_bot_members(room)) >= MAX_QQ_BOTS:
+        member['enabled'] = False
     room["members"].append(member)
     save_room(base, owner, room)
     return member
@@ -132,6 +135,9 @@ def update_room(base, owner, room_id, **changes):
     for key in ("title", "mode", "host_id", "summary", "enabled", "entry_kind", "flow_version"):
         if key in changes:
             room[key] = changes[key]
+    if room.get('entry_kind') == 'group' and len(active_bot_members(room)) > MAX_QQ_BOTS:
+        raise ValueError('每个 QQ 群流程最多同时启用 5 个机器人；请先关闭多余节点')
+    _validate_bot_assignments(room)
     return save_room(base, owner, room)
 
 
@@ -168,6 +174,37 @@ def node_states(room, profile):
     return states
 
 
+def active_bot_members(room):
+    """Count enabled robot branches; a disabled ancestor preserves and suspends its descendants."""
+    members = {m['id']: m for m in room.get('members', [])}
+    active = []
+    for identifier, member in members.items():
+        if identifier == room.get('host_id'):
+            continue
+        current, seen = identifier, set()
+        while current:
+            if current in seen or current not in members:
+                raise ValueError('节点关系包含循环或不存在的上级')
+            seen.add(current)
+            node = members[current]
+            if not node.get('enabled', True):
+                break
+            current = node.get('parent_id', '' if current == room.get('host_id') else room.get('host_id', ''))
+        else:
+            active.append(member)
+    return active
+
+
+def _validate_bot_assignments(room):
+    if room.get('entry_kind') != 'group':
+        return
+    assigned = {key: value.get('app_id') for key, value in (room.get('qq_group', {}).get('bots') or {}).items()}
+    assigned.update(room.get('qq_group_setup', {}).get('bots') or {})
+    active = [assigned[m['id']] for m in active_bot_members(room) if assigned.get(m['id'])]
+    if len(active) != len(set(active)):
+        raise ValueError('同一 QQ 群流程中的机器人账号不能重复分配给两个节点')
+
+
 @_transaction
 def update_node(base, owner, room_id, node_id, **changes):
     room = load_room(base, owner, room_id)
@@ -181,6 +218,27 @@ def update_node(base, owner, room_id, node_id, **changes):
             node[key] = changes[key]
     # Validate topology independently of enabled flags, including disabled branches.
     node_states(room, {})
+    if room.get('entry_kind') == 'group' and len(active_bot_members(room)) > MAX_QQ_BOTS:
+        raise ValueError('每个 QQ 群流程最多同时启用 5 个机器人；请先关闭其他节点或分支')
+    if 'qq_bot_app_id' in changes and node_id != room.get('host_id'):
+        import qq_official
+        identifier = qq_official.app_id(changes['qq_bot_app_id'])
+        if identifier not in {row['app_id'] for row in qq_official.bots(Path(base).parent) if row.get('enabled', True)}:
+            raise ValueError('请选择已启用的官方机器人账号')
+        setup = room.setdefault('qq_group_setup', {})
+        assignments = setup.setdefault('bots', {})
+        binding = room.get('qq_group') or {}
+        existing = {key: value.get('app_id') for key, value in (binding.get('bots') or {}).items()}
+        existing.update(assignments)
+        active = {m['id'] for m in active_bot_members(room)}
+        if identifier in {value for key, value in existing.items() if key != node_id and key in active}:
+            raise ValueError('同一 QQ 群流程中的机器人账号不能重复分配给两个节点')
+        current = (binding.get('bots') or {}).get(node_id) or {}
+        if current.get('app_id') != identifier:
+            binding['enabled'] = False
+            room['qq_group'] = binding
+        assignments[node_id] = identifier
+    _validate_bot_assignments(room)
     room.setdefault('model_catalogs', {}).update(changes.get('model_catalog') or {})
     room['flow_version'] = 1
     return save_room(base, owner, room)

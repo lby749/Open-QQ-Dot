@@ -52,13 +52,15 @@ def save_bot(home, identifier, name, secret='', *, enabled=True):
     from api_backend import save_key
     from house_settings import replace_file
     identifier = app_id(identifier)
+    rows = [row for row in bots(home) if row['app_id'] != identifier]
+    if enabled and sum(bool(row.get('enabled', True)) for row in rows) >= 5:
+        raise ValueError('最多同时启用 5 个官方机器人，请先停用其他账号')
     if not isinstance(secret, str) or len(secret) > 4096:
         raise ValueError('AppSecret 格式无效')
     if secret.strip():
         save_key(secret_dir(home), secret, purpose='qqbot_' + identifier)
     else:
         load_secret(home, identifier)
-    rows = [row for row in bots(home) if row['app_id'] != identifier]
     rows.append({'app_id': identifier, 'name': str(name).strip()[:60] or 'QQ 官方机器人', 'enabled': bool(enabled)})
     path = Path(home) / 'data/qq_official_bots.json'
     path.parent.mkdir(parents=True, exist_ok=True)

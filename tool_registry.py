@@ -41,10 +41,10 @@ def check_permission_allowed(
     commands_enabled = config.get("enabled", True) is True and (config.get("commands") is True or config.get("commands_enabled") is True) and not is_read_only
 
     if permission == ToolPermissionLevel.SENSITIVE_EXEC and not commands_enabled:
-        return False, "System configuration disabled command and Shell execution permissions (commands=False or read-only mode)"
+        return False, "没有命令执行权限，当前设置未授权执行命令"
 
     if permission == ToolPermissionLevel.WORKSPACE_WRITE and is_read_only:
-        return False, "System configuration is read-only (mode=read_only); modifying or writing workspace files is prohibited"
+        return False, "没有文件写入权限，当前仅允许读取"
 
     return True, ""
 
@@ -229,7 +229,7 @@ class ToolRegistry:
         if not allowed:
             return ToolExecutionResult(
                 success=False,
-                error=f"Permission denied: {perm_reason}",
+                error=f"未执行：{perm_reason}",
                 duration_sec=time.time() - start_time,
             )
 
@@ -261,7 +261,7 @@ class ToolRegistry:
             if not approved:
                 return ToolExecutionResult(
                     success=False,
-                    error=f"Operation not approved: {reason}",
+                    error="未执行：这项操作尚未获得批准，请查看待确认请求",
                     duration_sec=time.time() - start_time,
                 )
 
@@ -281,6 +281,8 @@ class ToolRegistry:
             try:
                 res = tool.handler(arguments, context)
                 result_holder["data"] = res
+            except PermissionError:
+                error_holder["error"] = "权限不足，操作已停止；没有继续执行，请检查当前好友和任务的权限设置"
             except Exception as exc:
                 error_holder["error"] = str(exc)
 

@@ -386,7 +386,7 @@ async function chatPage(qq) {
   };
   sendChat.onclick = sendChatMessage;
   chatInput.onkeydown = (event) => {
-    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+    if (event.key === 'Enter' && !event.isComposing && (event.ctrlKey || event.metaKey)) {
       event.preventDefault();
       sendChatMessage();
     }
@@ -973,7 +973,7 @@ async function modelPage(qq) {
     field('模型来源', provider),
     el('h2', {}, 'DeepSeek Harness'), field('模型', dshModel), field('思考强度', dshEffort),
     el('datalist', {id: 'dsh-models'}, ...o.dsh_models.map(name => el('option', {value: name}))),
-    el('div', {class: 'muted'}, '使用本机 DeepSeek Harness 桌面客户端，或已配置的 API 密钥。'),
+    el('div', {class: 'muted'}, '使用本机 DeepSeek Harness 桌面客户端，或已配置的 API 密钥。这里列出已保存名称与内置建议，实际账号目录请在电脑端提取。'),
     el('h2', {}, 'Codex'), field('模型', codexModel), field('思考强度', codexEffort), codexFastRow,
     el('div', {class: 'muted'}, '从直接回复到更深入思考，思考越深入，耗时通常越长。'),
     el('h2', {}, 'Claude 账号'), field('模型', claudeModel), field('思考强度', claudeEffort),
@@ -1088,16 +1088,24 @@ let currentAgentWs = 'default';
 let currentAgentSid = 'session_main';
 let agentConfigData = null;
 let isGenerating = false;
+let agentPageEpoch = 0, agentRenderEpoch = 0;
+
+function agentViewMatches(qq) {
+  return friendQQ === qq && view.name === 'friend' && view.qq === qq && view.tab === 'agent';
+}
 
 async function agentPage(qq) {
+  const epoch = ++agentPageEpoch;
   const [wsData, cfgData] = await Promise.all([
     api(`friend/${qq}/agent_workspaces`),
     api(`friend/${qq}/agent_config`)
   ]);
+  if (epoch !== agentPageEpoch || !agentViewMatches(qq)) return;
+  const workspace = wsData.active_id || 'default';
+  const sessData = await api(`friend/${qq}/agent_sessions?ws_id=${encodeURIComponent(workspace)}`);
+  if (epoch !== agentPageEpoch || !agentViewMatches(qq)) return;
   agentConfigData = cfgData;
-  currentAgentWs = wsData.active_id || 'default';
-
-  const sessData = await api(`friend/${qq}/agent_sessions?ws_id=${encodeURIComponent(currentAgentWs)}`);
+  currentAgentWs = workspace;
   if (!sessData.sessions || sessData.sessions.length === 0) {
     currentAgentSid = 'session_main';
   } else if (!sessData.sessions.some(s => s.id === currentAgentSid) && currentAgentSid !== '__qq_stream__') {
@@ -1108,12 +1116,15 @@ async function agentPage(qq) {
 }
 
 async function renderAgentConsole(qq, wsData, sessData) {
+  if (!agentViewMatches(qq)) return;
+  const epoch = ++agentRenderEpoch;
   let sessionData = {messages: []};
   try {
     sessionData = await api(`friend/${qq}/agent_session?ws_id=${encodeURIComponent(currentAgentWs)}&sid=${encodeURIComponent(currentAgentSid)}`);
   } catch (e) {
     sessionData = {messages: []};
   }
+  if (epoch !== agentRenderEpoch || !agentViewMatches(qq)) return;
 
   // 1. Topbar: Workspace & Session selector
   const wsList = wsData.workspaces && wsData.workspaces.length ? wsData.workspaces : [{id: 'default', title: '默认项目'}];
@@ -1175,6 +1186,7 @@ async function renderAgentConsole(qq, wsData, sessData) {
   const modelPill = el('div', {class: 'agent-pill'}, pillInfo, pillArrow);
   modelPill.onclick = () => openModelSelectorModal(qq, async () => {
     const updatedCfg = await api(`friend/${qq}/agent_config`);
+    if (!agentViewMatches(qq)) return;
     agentConfigData = updatedCfg;
     await renderAgentConsole(qq, wsData, sessData);
   });
@@ -1243,7 +1255,9 @@ async function renderAgentConsole(qq, wsData, sessData) {
 
   // 3. Messages Stream
   const msgList = el('div', {class: 'agent-msg-list'});
-  const msgs = sessionData.messages || [];
+  function paintMessages(messages) {
+  msgList.replaceChildren();
+  const msgs = messages || [];
   if (msgs.length === 0) {
     msgList.append(el('div', {class: 'card', style: 'text-align:center; padding: 28px 16px; color: var(--on-surface-variant);'},
       el('div', {style: 'width:44px;height:44px;border-radius:50%;background:#dbeafe;color:#1d4ed8;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-weight:700;font-size:14px;'}, 'AI'),
@@ -1257,7 +1271,7 @@ async function renderAgentConsole(qq, wsData, sessData) {
         msgList.append(uBubble);
       } else {
         const header = el('div', {class: 'agent-msg-header'},
-          el('span', {style: 'font-weight: 600; color: var(--primary);'}, 'AI · ' + (m.agent_name || (sessionData.is_qq ? '好友' : '智能体'))),
+          el('span', {style: 'font-weight: 600; color: var(--primary);'}, (sessionData.is_qq ? '' : 'AI · ') + (m.agent_name || (sessionData.is_qq ? '好友' : '智能体'))),
           el('span', {}, (m.timestamp ? m.timestamp.slice(11, 16) : ''))
         );
         const children = [header];
@@ -1271,6 +1285,8 @@ async function renderAgentConsole(qq, wsData, sessData) {
       }
     }
   }
+  }
+  paintMessages(sessionData.messages);
 
   // Generating card placeholder
   const generatingCard = el('div', {class: 'generating-card', id: 'agent-gen-card', style: isGenerating ? '' : 'display:none;'},
@@ -1301,7 +1317,7 @@ async function renderAgentConsole(qq, wsData, sessData) {
 
   const doSend = async () => {
     const text = inputBox.value.trim();
-    if (!text || isGenerating) return;
+    if (!text || isGenerating || !wrap.isConnected || !agentViewMatches(qq)) return;
     inputBox.value = '';
 
     msgList.insertBefore(el('div', {class: 'bubble me'}, text), generatingCard);
@@ -1323,6 +1339,10 @@ async function renderAgentConsole(qq, wsData, sessData) {
 
       isGenerating = false;
       generatingCard.style.display = 'none';
+      if (res.is_qq) {
+        await refreshQqMessages();
+        return;
+      }
 
       const header = el('div', {class: 'agent-msg-header'},
         el('span', {style: 'font-weight: 600; color: var(--primary);'}, 'AI · ' + (res.agent_name || (res.is_qq ? '我（QQ）' : '智能体'))),
@@ -1348,7 +1368,7 @@ async function renderAgentConsole(qq, wsData, sessData) {
 
   sendBtn.onclick = doSend;
   inputBox.onkeydown = (e) => {
-    if (e.key === '回车' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
       e.preventDefault();
       doSend();
     }
@@ -1360,6 +1380,28 @@ async function renderAgentConsole(qq, wsData, sessData) {
 
   const wrap = el('div', {class: 'agent-wrap'}, topbar, modelPill, taskBanner, msgList, dock);
   show(wrap);
+  let qqSignature = JSON.stringify(sessionData.messages || []), qqPolling = false;
+  async function refreshQqMessages() {
+    if (!wrap.isConnected || friendQQ !== qq || currentAgentSid !== '__qq_stream__' || qqPolling) return;
+    qqPolling = true;
+    try {
+      const data = await api(`friend/${qq}/agent_session?sid=__qq_stream__`);
+      if (!wrap.isConnected || friendQQ !== qq || currentAgentSid !== '__qq_stream__') return;
+      const next = JSON.stringify(data.messages || []);
+      if (next !== qqSignature) {
+        qqSignature = next;
+        paintMessages(data.messages);
+        msgList.append(generatingCard);
+      }
+      if (data.sync_warning) topbar.title = data.sync_warning;
+    } finally { qqPolling = false; }
+  }
+  if (sessionData.is_qq) {
+    const streamTimer = setInterval(() => {
+      if (!wrap.isConnected || friendQQ !== qq || currentAgentSid !== '__qq_stream__') {clearInterval(streamTimer);return;}
+      if (!document.hidden && !isGenerating) refreshQqMessages().catch(() => {});
+    }, 2500);
+  }
 }
 
 function openModelSelectorModal(qq, onSave) {

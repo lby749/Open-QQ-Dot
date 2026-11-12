@@ -24,6 +24,7 @@ def setup(tmp_path, monkeypatch):
             if action == 'get_login_info': return {'user_id': self.account}
             if action == 'get_stranger_info': return {'uid': 'u_SYNTHETIC_OWNER'}
             if action == 'get_group_member_info': return {'role': 'owner'}
+            if action == 'get_group_member_list': return [{'user_id': 22222}] if self.joined else []
             assert action == 'send_packet'
             self.sends += 1
             packet = connection._fields(bytes.fromhex(params['data']))
@@ -89,6 +90,7 @@ def test_truncated_or_unbounded_wire_responses_are_rejected(data):
 def test_link_requires_both_real_transports_and_replays_no_challenge(setup, monkeypatch):
     service, client = setup
     client.joined = True
+    monkeypatch.setattr(service, 'group_bots', lambda _: pytest.fail('link must verify the native roster without a second web login'))
     events, sent = [], []
     def reply(channel, text, message, sequence):
         events.extend([

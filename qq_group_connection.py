@@ -270,11 +270,16 @@ class GroupConnection:
     def _link(self, kind, group, identifiers, operation, timeout):
         """Correlate both transports, rather than guessing OpenIDs from a group number."""
         identifiers = list(dict.fromkeys(app_id(value) for value in identifiers))
-        if not 1 <= len(identifiers) <= 6:
-            raise ValueError('每次连接1至6个官方机器人')
+        if not 1 <= len(identifiers) <= 5:
+            raise ValueError('每次连接1至5个官方机器人')
         profiles = [OfficialGroupSender(self.home, value).invitation() for value in identifiers]
         if kind == 'group':
-            present = {row['qq_id'] for row in self.group_bots(group)}
+            # The logged-in native account already exposes the actual roster. Do not
+            # require a separate q.qq.com cookie/network session just to confirm membership.
+            roster = self.client.call('get_group_member_list', {'group_id': int(group)})
+            if not isinstance(roster, list):
+                raise ValueError('未取得目标群成员列表，未发送接入请求')
+            present = {str(row.get('user_id')) for row in roster if isinstance(row, dict)}
             if any(profile['qq_id'] not in present for profile in profiles):
                 raise ValueError('所选机器人尚未全部加入目标群')
         old = self._claim(operation, {'action': 'link_bots', 'kind': kind, 'group': group, 'apps': sorted(identifiers)})
@@ -377,10 +382,10 @@ def save_setup(base, owner, room_id, config):
     import agent_group
     import qq_official
     room = agent_group.load_room(base, owner, room_id)
-    workers = {m['id'] for m in room['members'] if m['id'] != room.get('host_id')}
-    if not room.get('host_id') or not 1 <= len(workers) <= 6:
-        raise ValueError('先设置主持人及1至6名工作成员')
-    bots = {str(member): app_id(identifier) for member, identifier in config.get('bots', {}).items()}
+    workers = {m['id'] for m in agent_group.active_bot_members(room)}
+    if not room.get('host_id') or not 1 <= len(workers) <= agent_group.MAX_QQ_BOTS:
+        raise ValueError('先设置主持人及1至5名机器人工作成员')
+    bots = {str(member): app_id(identifier) for member, identifier in config.get('bots', {}).items() if str(member) in workers}
     available = {r['app_id'] for r in qq_official.bots(Path(base).parent)}
     if set(bots) != workers or len(set(bots.values())) != len(workers) or not set(bots.values()) <= available:
         raise ValueError('每名工作成员须选择一只已配置的独立机器人')

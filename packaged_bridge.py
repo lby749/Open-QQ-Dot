@@ -78,7 +78,11 @@ def start():
     PID_FILE.write_text(str(process.pid), encoding="utf-8")
     time.sleep(2)
     if process.poll() is not None:
-        raise RuntimeError("桥接启动失败：" + ERROR_FILE.read_text(encoding="utf-8", errors="replace")[-500:])
+        running = bridge_process()
+        if running:
+            return f"Started, PID {running.pid}"
+        detail = ERROR_FILE.read_text(encoding="utf-8", errors="replace")[-500:] if ERROR_FILE.exists() else '没有检测到本目录的桥接进程'
+        raise RuntimeError("桥接启动失败：" + detail)
     return f"Started, PID {process.pid}"
 
 

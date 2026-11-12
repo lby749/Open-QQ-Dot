@@ -6,6 +6,8 @@
 
 无需先安装 Python。Windows 用户从[发行页](https://github.com/lby749/Open-QQ-Dot/releases/tag/v1.0.0-beta.3)下载一键配置安装器，或完整解压绿色包并运行其中的 `Open QQ Dot.exe`。模型、账号、外部服务和可选 QQ 运行时按需要配置。
 
+后续候选修订的 Codex 一键配置使用校验过的官方独立安装脚本，无需预装 Node.js；外部工具下载和账号调用仍需要可用网络。不要把应用首装、外部工具安装与账号实际收发当成同一项通过，最新边界见 [安装器复核](docs/INSTALLER_ACCEPTANCE_20261112.md)。
+
 ## 源码开发环境
 
 应用支持 Python 3.11—3.13，安装器缺少合适的本机 Python 时准备私有 Python 3.12。先建立独立环境，再安装界面依赖与测试工具：

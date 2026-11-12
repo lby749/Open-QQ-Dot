@@ -32,17 +32,26 @@ def discover(profile, provider, directory):
         models = {f"{m['provider']}/{m['id']}": list(m.get('variants') or []) for m in items if m.get('enabled')}
         note = 'OpenCode 当前服务的模型及对应思考档位'
     elif provider == 'antigravity':
-        from antigravity_backend import fetch_available_models
-        models = {key: ([key.rsplit('-', 1)[1]] if key.rsplit('-', 1)[-1] in ('low', 'medium', 'high') else [])
-                  for key, _ in fetch_available_models(api.get('antigravity_path') or None)}
+        from antigravity_backend import fetch_available_models, model_efforts
+        models = {key: model_efforts(key) for key, _ in fetch_available_models(api.get('antigravity_path') or None)}
         note = 'Antigravity CLI 当前模型；强度编码在模型名称中'
     elif provider == 'custom':
         from api_profiles import discover_models
-        from api_backend import load_key, DEFAULT_BASE_URL, PROTOCOLS
-        identifiers = discover_models(api.get('base_url') or DEFAULT_BASE_URL,
-            api.get('protocol') or next(iter(PROTOCOLS)), load_key(directory, api.get('api_key_id') or 'chat'))
+        from api_backend import load_key, settings
+        protocol, base, _model, _effort = settings(api)
+        identifiers = discover_models(base, protocol, load_key(directory, api.get('api_key_id') or 'chat'))
         models = {key: [] for key in identifiers}
         note = 'API 实际模型目录；服务未提供可验证的思考档位，沿用服务默认'
+    elif provider == 'dsh':
+        from dsh_backend import fetch_model_catalog, cli_path
+        from api_backend import load_key
+        settings = api.get('dsh_settings') or {}
+        path = api.get('dsh_path') or settings.get('path')
+        entry = fetch_model_catalog(path, provider=settings.get('provider'),
+            base_url=settings.get('base_url') or '', api_key='' if cli_path(path) else load_key(directory, 'dsh'))
+        models, note = entry['models'], entry['source']
+    elif provider.startswith('webchat_'):
+        raise ValueError('网页接入尚未实现账号模型枚举；请在对应网页选择模型，不能把预置名称当作提取结果')
     else:
         from agent_tool_adapters import AGENT_BACKENDS
         if provider in AGENT_BACKENDS:

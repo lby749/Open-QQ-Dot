@@ -65,8 +65,11 @@ def save_binding(base, owner, room_id, config):
     clean = {'enabled': bool(config.get('enabled')), 'self_id': _number(config.get('self_id', '')),
              'group_id': _number(config.get('group_id', '')), 'operators': operators, 'bots': {}}
     identifiers = set()
+    active = {m['id'] for m in agent_group.active_bot_members(room)}
+    clean['bots'].update({key: value for key, value in ((room.get('qq_group') or {}).get('bots') or {}).items()
+                          if key not in active and any(m['id'] == key for m in room['members'])})
     for member in room['members']:
-        if member['id'] == room['host_id']:
+        if member['id'] == room['host_id'] or member['id'] not in active:
             continue
         value = (config.get('bots') or {}).get(member['id']) or {}
         identifier = app_id(value.get('app_id', ''))
@@ -83,8 +86,8 @@ def save_binding(base, owner, room_id, config):
         clean['bots'][member['id']] = {'app_id': identifier, 'group_openid': openid}
     if not clean['bots']:
         raise ValueError('至少添加一名工作成员并绑定官方机器人')
-    if len(clean['bots']) > 6:
-        raise ValueError('每轮最多接入 6 名机器人工作成员')
+    if len(identifiers) > agent_group.MAX_QQ_BOTS:
+        raise ValueError('每个 QQ 群流程最多接入 5 个机器人，主 QQ 账号另计')
     for other_owner, other_room, other in bindings(base):
         if (other_owner, other_room['id']) != (str(owner), room_id) and (other['self_id'], other['group_id']) == (clean['self_id'], clean['group_id']):
             raise ValueError('该主账号的这个 QQ 群已绑定另一个协作群，避免重复回复')
@@ -384,12 +387,19 @@ class QQGroupTeam:
             raise PermissionError('主 QQ 账号与群绑定不一致，停止发送')
         return client
 
-    def _send_main(self, config, content, bots=(), *, run='', part=''):
+    def _send_main(self, config, content, bots=(), *, run='', part='', permission_notice=False):
         if run:
             with database(self.base) as db:
-                scope = db.execute('SELECT owner,room FROM runs WHERE id=?', (run,)).fetchone()
+                scope = db.execute('SELECT owner,room,status FROM runs WHERE id=?', (run,)).fetchone()
             room = agent_group.load_room(self.base, scope['owner'], scope['room'])
-            agent_group.current_node(self.base, scope['owner'], scope['room'], room['host_id'])
+            if permission_notice:
+                if scope['status'] != 'FAILED' or part != 'summary' or bots:
+                    raise PermissionError('只能为已拒绝的请求发送权限提示')
+                from provider_permissions import denied_reply
+                from house_status import load_profile
+                content = denied_reply(load_profile(self.root / 'friends' / scope['owner'] / 'friend.json'))
+            else:
+                agent_group.current_node(self.base, scope['owner'], scope['room'], room['host_id'])
         client = self._primary_client(config)
         segments = [{'type': 'text', 'data': {'text': content[:1500]}}]
         for identifier in bots:
@@ -418,10 +428,6 @@ class QQGroupTeam:
         if cfg['self_id'] != str(self.self_id_fn() or ''):
             return True
         if not message or not message.message_id or message.user_id not in cfg['operators']:
-            return True
-        try:
-            agent_group.current_node(self.base, owner, room['id'], room.get('host_id', ''))
-        except (PermissionError, ValueError, OSError):
             return True
         text = message.text.strip()
         if not message.mentions_me and not re.match(r'^(协作|任务)\s*[:：]', text):
@@ -582,6 +588,9 @@ class QQGroupTeam:
                 try:
                     result = self._call(owner, room, config, member, prefix + agent_group.prompt_for(room, member,
                         extra='你本轮的分派任务与验收要求：\n' + member['assignment']))
+                except PermissionError:
+                    failures.append(member['name'])
+                    result = '没有所需权限，当前成员的操作已停止，没有继续执行。'
                 except Exception:
                     failures.append(member['name'])
                     result = '本轮未完成，请在本地控制台检查模型连接或额度。'
@@ -598,6 +607,14 @@ class QQGroupTeam:
                 'FINISHED', '协作答复已生成；消息是否送达请看各成员回执')
         except _PrimaryOffline:
             status, detail = 'FAILED', '主 QQ 离线或状态未确认，协作已停止；不会自动重放'
+        except PermissionError:
+            status, detail = 'FAILED', '没有所需权限，协作已停止；没有继续执行或自动重放，请检查好友、节点和汇报通道的授权'
+            with database(self.base) as db:
+                db.execute('UPDATE runs SET status=?,detail=? WHERE id=?', (status, detail, key))
+            try:
+                self._send_main(config, detail, run=key, part='summary', permission_notice=True)
+            except Exception:
+                logging.getLogger(__name__).warning('权限不足的提示未取得 QQ 回执，未自动重发')
         except Exception:
             status, detail = 'FAILED', '协作未完成，请检查本地模型、账号及发送权限；不会自动重放'
         with database(self.base) as db:

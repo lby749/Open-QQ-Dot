@@ -56,6 +56,14 @@ RUNTIMES = {    'embedding': {
         'size_mb': {'cpu': 260, 'cuda': 2600},
         'needs_restart': True,
     },
+    'asr': {
+        'label': '本地语音识别',
+        'imports': ('sherpa_onnx', 'numpy'),
+        'packages': ('sherpa-onnx==1.13.8', 'sherpa-onnx-core==1.13.8', 'numpy>=2.2,<3'),
+        'mirrors': {'cpu': (), 'cuda': ()},
+        'size_mb': {'cpu': 20, 'cuda': 20},
+        'needs_restart': False,
+    },
     'browser': {
         'label': '真实浏览器自动化（Playwright）',
         'imports': ('playwright',),
@@ -73,7 +81,7 @@ RUNTIME_FOR_KIND = {
     'rerank': 'embedding',
     'llm': None,
     'tts': None,
-    'asr': None,
+    'asr': 'asr',
 }
 
 

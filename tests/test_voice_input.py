@@ -183,7 +183,7 @@ class PhonePageTests(unittest.TestCase):
                     patch('antigravity_backend.cli_path', return_value='agy.exe'):
                 state = house_web.voice_settings('12345', {})['input']
                 self.assertEqual(state['settings']['mode'], 'local')
-                self.assertEqual([model['id'] for model in state['models']], ['small', 'base'])
+                self.assertEqual([model['id'] for model in state['models']], ['small', 'standard', 'base'])
                 result = house_web.post_voice_input('12345', {'mode': 'agent'})
                 self.assertEqual(result['input']['agent'], 'antigravity')
                 self.assertIn('AI 模型直接听', result['message'])

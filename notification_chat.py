@@ -27,7 +27,13 @@ def event_facts(message):
     facts = {'kind': 'task', 'status': status, 'subject': subject[:300], 'details_in_console': True}
     if status == 'failed':
         error = message.content.lower()
-        facts['reason'] = ('访问被安全规则拦截' if 'ssrf' in error or 'private network' in error else
+        denied = metadata.get('permission_denied') or any(word in error for word in (
+            'permissionerror', 'permission denied', 'permission_denied', 'not authorized', 'unauthorized',
+            '权限不足', '没有权限', '没有命令执行权限', '没有文件写入权限', '未授权', '无权'))
+        if denied:
+            facts['permission_denied'] = True
+        facts['reason'] = ('没有所需权限，受限操作未执行；具体权限见控制台' if denied else
+                           '访问被安全规则拦截' if 'ssrf' in error or 'private network' in error else
                            '执行等待超时' if 'timeout' in error or 'timed out' in error else
                            '执行遇到阻碍，具体原因保存在控制台')
     return facts
@@ -35,6 +41,9 @@ def event_facts(message):
 
 def render_event(store, profile, directory, facts):
     """Reuse chat persona, template examples, memory, nickname, emotion and bubble shaping."""
+    if facts.get('permission_denied'):
+        from provider_permissions import denied_reply
+        return [denied_reply(profile)]
     import main
     import generation_log
     from persona_template import bubble_cap
@@ -54,6 +63,7 @@ def render_event(store, profile, directory, facts):
         '只谈本次事实中的主题，不能从称呼、角色示例或过去经历补充其他任务的状态。'
         '排队或进行中只表示已接收或正在处理，不能据此推断文件尚未创建；文件和验收结论只能取自明确事实。'
         '未完成、暂停、失败、待确认都不能说成成功。不要复制日志、代码、JSON、堆栈、内部编号或本机路径。'
+        'permission_denied 为真时，必须明确告诉好友没有所需权限、受限操作未执行；不得只说遇到问题或暗示已完成。'
         '若提及事实中的文件名，须完整照写；也可以泛称文件，不得把被截断的任务标题当成文件名。'
         '详细过程已经在控制台；若还需要用户补充或验收，要把这件事说清楚。'
         f'只返回 JSON {{"messages":["消息气泡"]}}，最多 {limit} 个气泡。\n'

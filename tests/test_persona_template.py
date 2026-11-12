@@ -68,7 +68,9 @@ class PersonaTemplateTests(unittest.TestCase):
         for i in range(25):
             rows += [message('2', i * 4000000, 'Hello'), message('1', i * 4000000 + 1000, 'okay!')]
         with patch('house_settings.local_models_enabled', return_value=False), patch.object(pt, 'call_model') as model:
-            template = pt.build_template(self.write(rows), '1', True, self.root)
+            template = pt.build_template(self.write(rows), '1', False, self.root)
+            with self.assertRaisesRegex(ValueError, '本地分析模型不可用'):
+                pt.build_template(self.write(rows), '1', True, self.root)
         model.assert_not_called()
         self.assertEqual(template['model'], 'program')
         self.assertEqual(template['traits'], [])
@@ -83,6 +85,7 @@ class PersonaTemplateTests(unittest.TestCase):
         traits = {'summary': '温和', 'traits': [{'trait': '爱用波浪号', 'evidence': ['好呀好呀3～']},
                                                 {'trait': '编造', 'evidence': ['从没说过的话']}]}
         with patch('house_settings.local_models_enabled', return_value=True), \
+                patch('local_persona_analyzer.missing_local_model', return_value=[]), \
                 patch.object(pt, 'call_model', return_value=json.dumps(traits, ensure_ascii=False)), \
                 patch.object(pt, 'tag_scenes', side_effect=lambda texts, _: ['greeting'] * len(texts)):
             template = pt.build_template(path, '1', True, self.root)

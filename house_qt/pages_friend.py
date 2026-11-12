@@ -81,7 +81,7 @@ def state_color(state):
     return GREEN if state == '运行中' else RED if state == '需要处理' else MUTED
 
 
-def phone_card(web, qq):
+def phone_card(web, qq, house=None, refresh=None):
     """Mobile connection card with local security isolation."""
     import io
     import qrcode
@@ -96,12 +96,73 @@ def phone_card(web, qq):
                        '手机需要重新扫码。继续？', '重置令牌'):
             return
         house_web.rotate_friend_token(qq)
-        toast(card, 'success', '访问令牌已重置；请关闭本页后重新进入，生成新二维码。', '安全')
+        if refresh:
+            refresh()
+        else:
+            toast(card, 'success', '访问令牌已重置；请重新进入本页，生成新二维码。', '安全')
     reset.clicked.connect(rotate_token)
-    card = Card('移动设备与网页访问 (Mobile & Web Access)', actions=(reset,))
+    connect = PrimaryPushButton('一键打开并配置 Funnel')
+    disconnect = PushButton('关闭 Funnel')
+    card = Card('移动设备与网页访问', actions=(reset,))
+    status = hint('Tailscale Funnel：手机无需安装 Tailscale，使用配对二维码连接。链接含访问令牌，请勿公开。')
+
+    def configure(disable=False):
+        from shiboken6 import isValid
+        import network
+        if house is not None and getattr(house, '_funnel_busy', False):
+            return
+        if house is not None:
+            house._funnel_busy = True
+        connect.setEnabled(False)
+        disconnect.setEnabled(False)
+
+        def progress(text):
+            if isValid(status):
+                status.setText(text)
+
+        def finish(result=None, failure=None):
+            if house is not None:
+                house._funnel_busy = False
+                if not isValid(house) or house.closing or house.exiting:
+                    return
+            if failure:
+                if disable:
+                    web['public'] = None
+                progress(str(failure))
+            elif result['state'] in ('ready', 'disabled'):
+                web['public'] = result['public']
+                if refresh:
+                    refresh()
+                progress(result['message'])
+            else:
+                progress(result['message'])
+                if result['state'] == 'unreachable' and web.get('public'):
+                    web['public'] = None
+                    if refresh:
+                        refresh()
+                    toast(house, 'warning', result['message'], '远程连接')
+                if result.get('authorization_url'):
+                    from PySide6.QtCore import QUrl
+                    from PySide6.QtGui import QDesktopServices
+                    QDesktopServices.openUrl(QUrl(result['authorization_url']))
+            if isValid(connect):
+                connect.setEnabled(True)
+                disconnect.setEnabled(bool(web.get('public')))
+
+        run_async(lambda report: network.disable_funnel() if disable else network.configure_funnel(progress=report),
+                  lambda result: finish(result=result), lambda error: finish(failure=error), progress=progress, pool=LONG_POOL)
+
+    connect.setEnabled(not getattr(house, '_funnel_busy', False))
+    disconnect.setEnabled(bool(web.get('public')) and connect.isEnabled())
+    connect.clicked.connect(lambda: configure())
+    disconnect.clicked.connect(lambda: configure(True))
+    card.add(status, row(connect, disconnect, None))
 
     has_remote = any(web.get(k) for k in ('tailnet', 'public', 'radmin', 'lan'))
     hints = []
+    if web.get('public'):
+        public = web['public'].rstrip('/') + '/?qq=' + qq + '#t=' + token
+        hints.append(hint(f'【Tailscale Funnel 远程入口】：{public}'))
     if web.get('radmin'):
         radmin_url = web['radmin'].rstrip('/') + '/?qq=' + qq + '#t=' + token
         hints.append(hint(f'【Radmin VPN 跨电脑连接】：已加入同一 Radmin 房间的电脑直接打开：{radmin_url}'))
@@ -115,10 +176,13 @@ def phone_card(web, qq):
 
     hints.append(hint(f'【本机浏览器入口】：{web["local"].rstrip("/")}/?qq={qq}#t={token}'))
     if not has_remote:
-        hints.append(hint('没有检测到 Tailscale 虚拟网段或远程入口。在电脑上运行 tailscale 或开启远程，这里就会出现对应配对入口。'))
+        hints.append(hint('远程入口尚未连接。点击上方「一键打开并配置 Funnel」；已有 Tailscale 会直接复用，未安装时自动下载。'))
         hints.append(hint('🔒 【本机安全隔离保护中】：当前仅限本机 127.0.0.1 访问，外部局域网及任何远程设备均无法扫描或连入此端口。'))
     else:
         hints.append(hint('二维码与链接内含专属访问令牌，已授权设备直接浏览器打开即可使用该智能体。'))
+
+    if not has_remote:
+        return card.add(*hints, hint('远程连接就绪后显示手机配对二维码；本机链接不能用于手机扫码。'))
 
     base = web.get('public') or web.get('tailnet') or web.get('radmin') or web.get('lan') or web.get('local')
     url = base.rstrip('/') + '/?qq=' + qq + '#t=' + token
@@ -160,6 +224,9 @@ class OverviewPage(Page):
         run_async(read, lambda value: self.show(records, *value), quiet)
 
     def show(self, records, profiles, modes):
+        from shiboken6 import isValid
+        if not isValid(self) or self.house.exiting:
+            return
         signature = tuple((qq, record.get('display_name', qq), bool(profiles[qq].get('bridge_enabled', True)),
                            bool(profiles[qq].get('cooperation_enabled', True)),
                            modes[qq]) for qq, record in records.items())
@@ -331,16 +398,7 @@ class StatusPage(Page):
 
     def load(self):
         self.name.setText(self.house.records[self.house.current_qq].get('display_name', self.house.current_qq))
-        if self.house.web and self.phone_card_scope != self.house.current_qq:
-            if self.phone_card_widget is not None:
-                self.column.removeWidget(self.phone_card_widget)
-                self.phone_card_widget.deleteLater()
-            self.phone_card_widget = phone_card(self.house.web, self.house.current_qq)
-            self.phone_state = body()
-            self.phone_card_widget.add(self.phone_state)
-            self.column.insertWidget(1, self.phone_card_widget)
-            self.phone_card_scope = self.house.current_qq
-        self.show_phone()
+        self.load_phone_card()
         profile = load_profile(self.house.profile_path)
         for key, _, _, get, _ in SWITCHES:
             self.switches[key].blockSignals(True)
@@ -351,6 +409,22 @@ class StatusPage(Page):
         if hasattr(self, 'agent_workbench') and self.agent_workbench is not None:
             self.agent_workbench.reload()
         self.house.refresh_friend_mode()
+
+    def load_phone_card(self):
+        if self.house.web and self.phone_card_scope != self.house.current_qq:
+            if self.phone_card_widget is not None:
+                self.column.removeWidget(self.phone_card_widget)
+                self.phone_card_widget.deleteLater()
+            self.phone_card_widget = phone_card(self.house.web, self.house.current_qq, self.house, self.refresh_phone_card)
+            self.phone_state = body()
+            self.phone_card_widget.add(self.phone_state)
+            self.column.insertWidget(1, self.phone_card_widget)
+            self.phone_card_scope = self.house.current_qq
+        self.show_phone()
+
+    def refresh_phone_card(self):
+        self.phone_card_scope = None
+        self.load_phone_card()
 
     def save_switch(self, key, on):
         try:
@@ -783,8 +857,18 @@ class StylePage(Page):
             BodyLabel('身份'), self.prompt_presets['identity'],
             BodyLabel('说话方式'), self.prompt_presets['tone'],
             BodyLabel('聊天习惯'), self.prompt_presets['habits'],
-            BodyLabel('边界'), self.prompt_presets['boundary'],
+            BodyLabel('内容边界与敏感词规则'), self.prompt_presets['boundary'],
+            hint('这些内容规则随人设提供给模型；电脑与数据权限由程序单独校验。'),
             BodyLabel('关系'), self.prompt_presets['relation']))
+
+        self.permission_denied_reply = PlainTextEdit()
+        self.permission_denied_reply.setFixedHeight(80)
+        self.permission_denied_reply.setPlaceholderText('例如：这项权限还没开，先在我的权限设置里调整一下吧。')
+        save_denied = PushButton('保存权限不足回复')
+        save_denied.clicked.connect(self.save_permission_denied_reply)
+        self.add(Card('权限不足时的回复', actions=(save_denied,)).add(
+            hint('只对当前好友生效，最多 1200 字。回复始终先说明没有所需权限；下面可填写补充文案，留空使用默认回复。'),
+            self.permission_denied_reply))
 
         self.continuation_choice = ComboBox()
         self.continuation_choice.addItems([f'{n} 次' for n in range(0, 11)])
@@ -870,6 +954,8 @@ class StylePage(Page):
     def load(self):
         profile = load_profile(self.house.profile_path)
         self.style.setPlainText(profile.get('style', ''))
+        denied = profile.get('permission_denied_reply', '')
+        self.permission_denied_reply.setPlainText(denied if isinstance(denied, str) else '')
         self.agent_name.setText(str(profile.get('agent_name') or ''))
         try:
             self.continuation_choice.setCurrentIndex(max(0, min(10, int(profile.get('continuation_max', 1) or 0))))
@@ -1059,6 +1145,19 @@ class StylePage(Page):
         except Exception as exc:
             toast(self.house, 'error', str(exc), '应用失败')
 
+    def save_permission_denied_reply(self):
+        text = self.permission_denied_reply.toPlainText().strip()
+        if len(text) > 1200:
+            toast(self.house, 'warning', '回复最多 1200 字，原设置未改动。')
+            return
+        try:
+            profile = load_profile(self.house.profile_path)
+            profile['permission_denied_reply'] = text
+            write_profile(self.house.profile_path, profile)
+            toast(self.house, 'success', '权限不足回复已保存，仅对当前好友生效。')
+        except Exception as exc:
+            toast(self.house, 'error', str(exc), '保存回复失败')
+
     def save_proactive_style(self):
         try:
             profile = load_profile(self.house.profile_path)
@@ -1083,6 +1182,7 @@ class ModelPage(Page):
         super().__init__(house, 'modelPage')
         self._section = 'sources'
         self._section_cards = {}
+        self._preparing_agents = set()
         self.options = model_options()
         self.dsh = CheckBox('DeepSeek Harness')
         self.claude = CheckBox('Claude Code')
@@ -1138,6 +1238,8 @@ class ModelPage(Page):
         self.dsh_effort = ComboBox()
         self.dsh_effort.addItems(PROVIDER_DEFAULTS['dsh']['efforts'])
         self.dsh_effort.setMinimumWidth(110)
+        self.dsh_catalog = {}
+        self.dsh_model.currentTextChanged.connect(self.update_dsh_efforts)
         self.dsh_key = PasswordLineEdit()
         self.dsh_key.setPlaceholderText('使用本机桌面客户端账号额度可留空；亦可填写 API Key')
         self.dsh_key_state = hint('')
@@ -1159,6 +1261,8 @@ class ModelPage(Page):
         self.ag_model.addItems(list(AG_MODELS))
         self.ag_model.setMinimumWidth(230)
         self.ag_effort.addItems(list(AG_EFFORTS))
+        self.ag_catalog_loaded = False
+        self.ag_model.currentTextChanged.connect(self.update_antigravity_efforts)
         self.ag_path = LineEdit()
         self.ag_path.setPlaceholderText('系统默认 (tools/antigravity-cli 或 PATH 中 agy)')
         browse_ag = PushButton('选择路径…')
@@ -1203,7 +1307,7 @@ class ModelPage(Page):
         self.protocol.addItems(list(PROTOCOLS))
         self.protocol.setMinimumWidth(190)
         self.api_effort.addItems(list(EFFORTS))
-        self.base_url, self.deepseek_model = LineEdit(), LineEdit()
+        self.base_url, self.deepseek_model = LineEdit(), EditableComboBox()
         self.base_url.setPlaceholderText(DEFAULT_BASE_URL)
         self.base_url.setMinimumWidth(320)
         self.deepseek_model.setPlaceholderText(MODELS[0])
@@ -1572,6 +1676,8 @@ class ModelPage(Page):
             self.voice_in_switch.addItem(key, text, onClick=lambda *_, key=key: self.switch_voice_input(key))
         self.voice_in_tier = ComboBox()
         self.voice_in_tier.setMinimumWidth(320)
+        self.voice_in_download = PushButton('一键下载 / 修复')
+        self.voice_in_download.clicked.connect(self.download_voice_input)
         self.voice_in_agent = ComboBox()
         for key, text in (('auto', '自动（好友当前模型能听就用它，否则用 Antigravity 的 Gemini）'),
                           ('antigravity', 'Antigravity · Gemini'), ('api', '自定义 API（OpenAI 兼容，需支持音频输入）')):
@@ -1585,17 +1691,22 @@ class ModelPage(Page):
             field.currentIndexChanged.connect(self.update_voice_input_state)
         save_voice_in = PushButton('保存识别设置')
         save_voice_in.clicked.connect(lambda: self.save_voice_input())
-        self.add(Card('收到 QQ 语音时（本地模型 / AI 多模态）', actions=(save_voice_in,), collapsible=True, collapsed=True).add(
+        self.voice_in_card = self.add(Card('收到 QQ 语音时（本地模型 / AI 多模态）', actions=(save_voice_in,), collapsible=True, collapsed=False).add(
             row(BodyLabel('识别方式'), self.voice_in_switch, None),
-            row(BodyLabel('本地识别模型'), self.voice_in_tier, None),
+            row(BodyLabel('本地识别模型'), self.voice_in_tier, self.voice_in_download, None),
+            hint('这个模型也用于输入框的语音转文字。默认 Q8 小模型约82MB，安装包不含权重；其他档位手动选择、按需下载，所有好友共用权重。'),
             row(BodyLabel('听语音的 AI'), self.voice_in_agent, None),
             row(BodyLabel('AI 模型名'), self.voice_in_model),
             self.voice_in_state,
-            hint('点上方按钮立即切换并保存，只对当前好友生效。好友的语音会先变成文字（附情绪），再照常交给回复模型，'
+            hint('点上方按钮立即切换并保存，只对当前好友生效。好友的语音先变成文字（支持情绪的模型可附带情绪），再交给回复模型，'
                  '聊天记录里保存的也是这段文字。'),
-            hint('本地模型：SenseVoice 在 CPU 上运行，不消耗模型额度，在上方「本地模型自动下载与装配」选择「语音识别」下载。'
+            hint('本地模型在 CPU 上运行，不消耗模型额度，可在这里一键下载或修复。'
                  'AI 模型：每条语音多一次模型调用；Codex、Claude Code 和 DeepSeek 不能直接听音频，所以由 Gemini 或支持音频的 API 模型来听。'
                  'AI 模型失败时会改用已下载的本地模型；本地模型没下载时不会悄悄改用付费的 AI 模型。')))
+        local_cards = self._section_cards['local']
+        self.column.insertWidget(self.column.indexOf(local_cards[0]), self.voice_in_card)
+        local_cards.remove(self.voice_in_card)
+        local_cards.insert(0, self.voice_in_card)
 
         self.refresh_all_model_views()
         for button in (self.dsh, self.claude, self.codex, self.antigravity, self.deepseek,
@@ -2204,16 +2315,23 @@ class ModelPage(Page):
 
     def prepare_agent(self, provider):
         """One-click install/open/login for a model source, without storing credentials."""
+        if provider in self._preparing_agents:
+            toast(self, 'info', '正在准备这个模型来源，请稍候。', '模型来源')
+            return
+        self._preparing_agents.add(provider)
+        toast(self, 'info', '正在准备模型来源，首次下载可能需要几分钟。', '模型来源')
         def job(report):
             import agent_launcher
             return agent_launcher.prepare(provider, lambda *args: report(args[-1]))
 
         def done(message):
+            self._preparing_agents.discard(provider)
             toast(self, 'success', message, '模型来源')
             if provider == 'opencode':
                 self.adapter_settings.fields['opencode']['status'].setText(message)
 
         def failed(exc):
+            self._preparing_agents.discard(provider)
             toast(self, 'error', str(exc), '模型来源')
 
         run_async(job, done, failed, pool=LONG_POOL)
@@ -2258,50 +2376,49 @@ class ModelPage(Page):
                   pool=LONG_POOL)
 
     def fetch_dsh_models(self):
-        from pathlib import Path
         import dsh_backend
-        toast(self.house, 'info', '正在提取 DeepSeek 可用模型与思考档位…')
+        directory = self.house.friend_dir
+        custom = self.dsh_path.text().strip() or None
+        base_url = self.dsh_url.text().strip()
+        settings = (load_profile(self.house.profile_path).get('model_api') or {}).get('dsh_settings') or {}
+        api_key = self.dsh_key.text().strip()
+        if not api_key and not dsh_backend.cli_path(custom):
+            try:
+                api_key = load_key(directory, 'dsh')
+            except (OSError, RuntimeError) as exc:
+                return toast(self.house, 'error', str(exc), '请先配置 DSH 程序或 API 密钥')
+        toast(self.house, 'info', '正在读取 DSH 当前来源的模型目录…')
         def do_fetch(_):
-            custom = self.dsh_path.text().strip()
-            models = dsh_backend.fetch_available_models(custom)
-            api_key = self.dsh_key.text().strip()
-            if not api_key:
-                kfile = key_path(self.house.friend_dir, 'dsh')
-                if kfile.exists():
-                    api_key = kfile.read_text('utf-8').strip()
-            if api_key:
-                try:
-                    from api_backend import fetch_provider_models
-                    base_url = self.dsh_url.text().strip() or PROVIDER_DEFAULTS['dsh']['base_url']
-                    api_models = fetch_provider_models('dsh', base_url, api_key)
-                    for m in api_models:
-                        if m not in models:
-                            models.append(m)
-                except Exception:
-                    pass
-            return models
-
-        def on_done(models):
+            return dsh_backend.fetch_model_catalog(custom, provider=settings.get('provider'),
+                                                   base_url=base_url, api_key=api_key)
+        def on_done(entry):
+            if self.house.friend_dir != directory or self.dsh_path.text().strip() != (custom or ''):
+                return
+            self.dsh_catalog = entry['models']
             current = self.dsh_model.currentText()
+            self.dsh_model.blockSignals(True)
             self.dsh_model.clear()
-            self.dsh_model.addItems(models)
-            if current and current in models:
+            self.dsh_model.addItems(list(self.dsh_catalog))
+            if current in self.dsh_catalog:
                 self.dsh_model.setCurrentText(current)
-            elif models:
-                self.dsh_model.setCurrentText(models[0])
+            elif entry.get('default_model') in self.dsh_catalog:
+                self.dsh_model.setCurrentText(entry['default_model'])
+            self.dsh_model.blockSignals(False)
+            self.update_dsh_efforts()
+            toast(self.house, 'success', f"已读取 {len(self.dsh_catalog)} 个模型。{entry['source']}；额度需另行验证。", '模型目录已更新')
+        run_async(do_fetch, done=on_done, error=lambda exc: toast(self.house, 'error', str(exc), '提取模型失败')
+                  if self.house.friend_dir == directory else None, pool=LONG_POOL)
 
-            # Sync official reasoning efforts
-            curr_effort = self.dsh_effort.currentText()
-            self.dsh_effort.clear()
-            self.dsh_effort.addItems(list(dsh_backend.EFFORTS))
-            if curr_effort in dsh_backend.EFFORTS:
-                self.dsh_effort.setCurrentText(curr_effort)
-            else:
-                self.dsh_effort.setCurrentText('low')
-
-            toast(self.house, 'success', f'已提取 {len(models)} 个可用模型，并同步官方思考档位 (off/low/high/max)', '提取成功')
-
-        run_async(do_fetch, done=on_done, error=lambda exc: toast(self.house, 'error', str(exc), '提取模型失败'), pool=LONG_POOL)
+    def update_dsh_efforts(self, *_):
+        if not self.dsh_catalog:
+            return
+        previous = self.dsh_effort.currentText()
+        self.dsh_effort.clear()
+        self.dsh_effort.addItem('工具默认', userData='')
+        for effort in self.dsh_catalog.get(self.dsh_model.currentText(), []):
+            self.dsh_effort.addItem(effort, userData=effort)
+        index = self.dsh_effort.findData(previous)
+        self.dsh_effort.setCurrentIndex(max(0, index))
 
     def test_antigravity(self):
         import antigravity_backend
@@ -2311,7 +2428,7 @@ class ModelPage(Page):
             toast(self.house, 'error', '未找到 Antigravity CLI（agy 命令）。若安装在 D 盘或非标准目录，请点击「选择路径…」指定 agy.exe', '测试失败')
             return
         api = {'antigravity_model': self.ag_model.text().strip(),
-               'antigravity_effort': self.ag_effort.currentText(),
+               'antigravity_effort': self.selected_antigravity_effort(),
                'antigravity_path': custom}
         directory = self.house.friend_dir
         toast(self.house, 'success', f'正在测试 CLI（{cli}，仅测试文本连接，不发送 QQ）')
@@ -2370,10 +2487,14 @@ class ModelPage(Page):
     def fetch_antigravity_models(self):
         import antigravity_backend
         custom = self.ag_path.text().strip() or None
+        directory = self.house.friend_dir
         toast(self.house, 'success', '正在从 Antigravity CLI 读取模型列表…')
         def do_fetch(_):
             return antigravity_backend.fetch_available_models(custom)
         def on_done(models):
+            if self.house.friend_dir != directory or self.ag_path.text().strip() != (custom or ''):
+                return
+            self.ag_catalog_loaded = True
             current = self.ag_model.currentText()
             self.ag_model.clear()
             for model_id, label in models:
@@ -2382,9 +2503,27 @@ class ModelPage(Page):
                 self.ag_model.setCurrentText(current)
             elif models:
                 self.ag_model.setCurrentText(models[0][0])
+            self.update_antigravity_efforts()
             summary = ", ".join(m[0] for m in models[:4])
             toast(self.house, 'success', f'已提取 {len(models)} 个可用模型：{summary}…', '模型提取成功')
-        run_async(do_fetch, done=on_done, error=lambda exc: toast(self.house, 'error', str(exc), '提取模型失败'), pool=LONG_POOL)
+        run_async(do_fetch, done=on_done, error=lambda exc: toast(self.house, 'error', str(exc), '提取模型失败')
+                  if self.house.friend_dir == directory else None, pool=LONG_POOL)
+
+    def selected_antigravity_effort(self):
+        value = self.ag_effort.currentData()
+        return self.ag_effort.currentText() if value is None else value
+
+    def update_antigravity_efforts(self, *_):
+        if not self.ag_catalog_loaded:
+            return
+        from antigravity_backend import model_efforts
+        self.ag_effort.clear()
+        efforts = model_efforts(self.ag_model.currentText())
+        if efforts:
+            for effort in efforts:
+                self.ag_effort.addItem(effort, userData=effort)
+        else:
+            self.ag_effort.addItem('工具默认', userData='')
 
     def restore_web_models(self, key, source):
         import web_chat
@@ -2395,16 +2534,19 @@ class ModelPage(Page):
         field.clear()
         field.addItems(web_chat.models_for(source))
         if current:
-            field.setCurrentText(current)
+            field.setText(current)
         toast(self.house, 'info', '网页模型名称由站点控制，已恢复内置候选；仍可直接输入你控制台里看到的名称。', '网页模型')
 
     def fetch_codex_models(self):
         import codex_settings
         custom = self.codex_path.text().strip() or None
+        directory = self.house.friend_dir
         toast(self.house, 'success', '正在从 Codex CLI 提取可用模型…')
         def do_fetch(_):
             return codex_settings.fetch_available_models(custom)
         def on_done(options):
+            if self.house.friend_dir != directory or self.codex_path.text().strip() != (custom or ''):
+                return
             self.options = options
             current = self.codex_model.currentText()
             self.codex_model.blockSignals(True)
@@ -2418,7 +2560,8 @@ class ModelPage(Page):
             self.update_efforts()
             summary = ", ".join(list(options.keys())[:4])
             toast(self.house, 'success', f'已提取 {len(options)} 个可用模型：{summary}…', '模型提取成功')
-        run_async(do_fetch, done=on_done, error=lambda exc: toast(self.house, 'error', str(exc), '提取模型失败'), pool=LONG_POOL)
+        run_async(do_fetch, done=on_done, error=lambda exc: toast(self.house, 'error', str(exc), '提取模型失败')
+                  if self.house.friend_dir == directory else None, pool=LONG_POOL)
 
     def fetch_claude_models(self):
         import claude_backend
@@ -2442,6 +2585,7 @@ class ModelPage(Page):
         base_url = self.base_url.text().strip() or DEFAULT_BASE_URL
         protocol = self.protocol.currentText()
         key_id = self.profile_id or 'chat'
+        directory = self.house.friend_dir
         try:
             api_key = self.key.text().strip() or self.chat_keys.get(key_id) or load_key(self.house.friend_dir, key_id)
         except (OSError, RuntimeError) as exc:
@@ -2449,12 +2593,20 @@ class ModelPage(Page):
             return
         toast(self.house, 'info', '正在从当前连接查询模型列表…')
         def on_done(models):
+            if self.house.friend_dir != directory or (self.profile_id or 'chat') != key_id:
+                return
+            if (self.base_url.text().strip() or DEFAULT_BASE_URL) != base_url or self.protocol.currentText() != protocol:
+                return
             # Do not silently replace a model the user deliberately selected.
-            if not self.deepseek_model.text().strip():
-                self.deepseek_model.setText(models[0])
+            current = self.deepseek_model.text().strip()
+            self.deepseek_model.clear()
+            self.deepseek_model.addItems(models)
+            if current:
+                self.deepseek_model.setText(current)
             toast(self.house, 'success', f'查询到 {len(models)} 个模型：{", ".join(models[:6])}', '模型列表')
         run_async(lambda _: discover_models(base_url, protocol, api_key), done=on_done,
-                  error=lambda exc: toast(self.house, 'error', str(exc), '模型列表查询失败'), pool=LONG_POOL)
+                  error=lambda exc: toast(self.house, 'error', str(exc), '模型列表查询失败')
+                  if self.house.friend_dir == directory and (self.profile_id or 'chat') == key_id else None, pool=LONG_POOL)
 
     def update_efforts(self, *_):
         current = self.effort.currentText()
@@ -2477,6 +2629,17 @@ class ModelPage(Page):
         self.refresh_voice_settings(profile)
         self.refresh_voice_input(profile)
 
+    def download_voice_input(self):
+        from .model_download_dialog import ModelDownloadDialog
+        tier = self.voice_in_tier.currentData() or 'small'
+        console = self.house.pages.get('workbenchPage')
+        if tier == 'small' and console and getattr(console,'_voice_preparing',False):
+            return toast(self.house,'info','默认小型语音模型正在自动准备，请稍候；不会重复下载。')
+        owner = self.house.current_qq
+        ModelDownloadDialog([('asr',tier)],self.house).exec()
+        if owner == self.house.current_qq:
+            self.refresh_voice_input({'voice_input':self.voice_input_value()})
+
     def refresh_voice_input(self, profile=None):
         from model_downloader import MODEL_CATALOG, is_installed
         import voice_input
@@ -2489,7 +2652,7 @@ class ModelPage(Page):
         self.voice_in_tier.clear()
         for tier, cfg in MODEL_CATALOG['asr'].items():
             state = '' if is_installed('asr', tier) else '（未下载）'
-            self.voice_in_tier.addItem(f"【{cfg['tier_name'].split()[0]}】{cfg['name']}{state}", userData=tier)
+            self.voice_in_tier.addItem(f"{cfg['name']} · {cfg['tier_name']}{state}", userData=tier)
         self.voice_in_tier.setCurrentIndex(list(MODEL_CATALOG['asr']).index(value['tier']))
         self.voice_in_agent.setCurrentIndex(list(voice_input.AGENTS).index(value['agent']))
         for field in (self.voice_in_tier, self.voice_in_agent):
@@ -3072,6 +3235,8 @@ class ModelPage(Page):
         profile = load_profile(self.house.profile_path)
         api = profile.get('model_api') or {}
         info = provider_context.info(api)
+        self.dsh_catalog = {}
+        self.ag_catalog_loaded = False
         self.compact_info.setText(f'当前 {info.provider} 兼容窗口：{info.window:,} token；达到 90%（{info.compact_at:,}）自动压缩并整理记忆。')
         self.compact.setPlaceholderText(str(info.window))
         provider = api.get('provider', 'codex')
@@ -3127,14 +3292,19 @@ class ModelPage(Page):
             d_path = dsh_data.get('path', '')
 
         self.dsh_url.setText(d_url)
-        self.dsh_model.setCurrentText(d_model)
-        self.dsh_effort.setCurrentText(d_effort)
+        self.dsh_model.clear()
+        self.dsh_model.setText(d_model)
+        self.dsh_effort.clear()
+        self.dsh_effort.addItem('工具默认', userData='')
+        if d_effort:
+            self.dsh_effort.addItem(d_effort, userData=d_effort)
+            self.dsh_effort.setCurrentIndex(1)
         self.dsh_path.setText(d_path or self._default_dsh_path())
         self.dsh_key.clear()
         web_models = api.get('webchat_models') if isinstance(api.get('webchat_models'), dict) else {}
         web_efforts = api.get('webchat_efforts') if isinstance(api.get('webchat_efforts'), dict) else {}
         for key, field in self.web_model_fields.items():
-            field.setCurrentText(str(web_models.get(key) or field.currentText()))
+            field.setText(str(web_models.get(key) or field.currentText()))
         for key, field in self.web_effort_fields.items():
             field.setCurrentText(str(web_efforts.get(key) or field.currentText()))
         web_agent = api.get('web_agent') if isinstance(api.get('web_agent'), dict) else {}
@@ -3152,7 +3322,9 @@ class ModelPage(Page):
             field.setCurrentIndex(max(0, index))
 
         self.ag_model.setText(api.get('antigravity_model') or AG_MODELS[0])
-        self.ag_effort.setCurrentText(api.get('antigravity_effort') or 'low')
+        self.ag_effort.clear()
+        configured_effort = api.get('antigravity_effort') or 'low'
+        self.ag_effort.addItem(configured_effort, userData=configured_effort)
         self.ag_path.setText(api.get('antigravity_path', ''))
         self.claude_model.setText(api.get('claude_model') or CLAUDE_MODELS[0])
         self.claude_effort.setCurrentText(api.get('claude_effort') or 'low')
@@ -3255,7 +3427,7 @@ class ModelPage(Page):
             master_key = self.master_agent_combo.currentData() or (order[0] if order else active[0])
             multi_enabled = len(active) > 1
 
-            ag = {'antigravity_model': self.ag_model.text().strip(), 'antigravity_effort': self.ag_effort.currentText()}
+            ag = {'antigravity_model': self.ag_model.text().strip(), 'antigravity_effort': self.selected_antigravity_effort()}
             if 'antigravity' in active:
                 ag_settings(ag)
             claude = {'claude_model': self.claude_model.text().strip(), 'claude_effort': self.claude_effort.currentText()}
@@ -3279,7 +3451,7 @@ class ModelPage(Page):
                 cfg = PROVIDER_DEFAULTS.get('dsh', {})
                 p_url = self.dsh_url.text().strip() or cfg.get('base_url', '')
                 p_model = self.dsh_model.currentText().strip() or cfg.get('model', 'deepseek-flash')
-                p_effort = self.dsh_effort.currentText().strip() or 'low'
+                p_effort = self.dsh_effort.currentData() if self.dsh_effort.currentData() is not None else self.dsh_effort.currentText().strip()
                 p_path = self.dsh_path.text().strip()
                 p_key = self.dsh_key.text().strip()
                 key_id = cfg.get('key_id', 'dsh')
@@ -3354,7 +3526,7 @@ class ModelPage(Page):
             dsh_cfg = PROVIDER_DEFAULTS.get('dsh', {})
             d_url = self.dsh_url.text().strip() or dsh_cfg.get('base_url', '')
             d_model = self.dsh_model.currentText().strip() or dsh_cfg.get('model', 'deepseek-flash')
-            d_effort = self.dsh_effort.currentText().strip() or 'low'
+            d_effort = self.dsh_effort.currentData() if self.dsh_effort.currentData() is not None else self.dsh_effort.currentText().strip()
             d_path = self.dsh_path.text().strip()
             d_key = self.dsh_key.text().strip()
             if d_key:

@@ -20,6 +20,7 @@ try:
     import house_qt.task_center as pages_task_center
     import house_qt.capsules as pages_capsules
     import house_qt.qq_connection as pages_connection
+    import house_qt.dotlink as pages_dotlink
     from PySide6.QtCore import Qt, QEvent
     import house_qt.window as window_module
     import house_status
@@ -44,8 +45,10 @@ class HouseQtTests(unittest.TestCase):
             'qq_id': '12345', 'display_name': 'testfriend', 'directory': str(self.directory), 'self_id': '77777'}}})
         FriendStore(self.directory).close()
         patches = [patch.object(module, 'ROOT', self.root) for module in
-                   (house_status, window_module, pages_friend, pages_more, pages_capsules, pages_connection)]
+                   (house_status, window_module, pages_friend, pages_more, pages_capsules, pages_connection, pages_dotlink)]
         patches += [patch.dict(os.environ, {'QQ_BRIDGE_HOME': str(self.root)}),
+                    patch('agent_service.ROOT',self.root),patch('session_manager.ROOT',self.root),
+                    patch('qq_link.QQClient',side_effect=RuntimeError('UI tests do not connect to QQ')),
                     patch('house_qt.first_run.should_show', return_value=False),
                     patch.object(house_status, 'REGISTRY', self.root / 'friends.json'),
                     patch.object(window_module, 'REGISTRY', self.root / 'friends.json'),
@@ -536,10 +539,21 @@ class HouseQtTests(unittest.TestCase):
         # Test DeepSeek Harness
         page.dsh.setChecked(True)
         page.dsh_url.setText('https://api.deepseek.com')
-        page.dsh_model.setCurrentText('deepseek-reasoner')
-        page.dsh_effort.setCurrentText('high')
+        # EditableComboBox.setCurrentText only selects an existing suggestion.
+        # Type the unlisted model as a user would in its editable field.
+        from PySide6.QtTest import QTest
+        page.ensureWidgetVisible(page.dsh_model)
+        page.dsh_model.selectAll()
+        QTest.keyClicks(page.dsh_model, 'deepseek-reasoner')
         page.dsh_key.setText('sk-deepseek-test')
         page.dsh_path.setText('D:/dsh/resources/runtime/cli/bin/dsh.cmd')
+        # Reasoning levels become selectable only after explicit discovery.
+        with patch('dsh_backend.fetch_model_catalog', return_value={
+                'models': {'deepseek-reasoner': ['low', 'high']},
+                'default_model': 'deepseek-reasoner', 'source': 'synthetic provider catalogue'}):
+            page.fetch_dsh_models()
+            self.settle(until=lambda: page.dsh_effort.findData('high') >= 0)
+        page.dsh_effort.setCurrentIndex(page.dsh_effort.findData('high'))
         page.save()
         api = self.profile()['model_api']
         self.assertEqual(api['provider'], 'dsh')
@@ -609,7 +623,9 @@ class HouseQtTests(unittest.TestCase):
         with patch('house_qt.agent_console_widget.toast'):
             menu.actions()[1].trigger()
         self.assertEqual(self.profile()['model_api']['provider_approvals']['codex'], 'on-request')
-        self.assertEqual(console.access_badge.text(), '按需批准')
+        self.assertEqual(console.access_badge.text(), '仅聊天')
+        self.assertIn('智能体审批：按需批准', console.access_badge.toolTip())
+        self.assertFalse(self.profile().get('computer_tools', {}).get('enabled', False))
         with patch.object(RoundMenu, 'exec', lambda menu, *_: shown.append(menu)):
             console.show_more_session_menu()  # the "⋯" menu had the same fault
         self.assertEqual(len([a for a in shown[-1].actions() if not a.isSeparator()]), 5)
@@ -705,7 +721,8 @@ class HouseQtTests(unittest.TestCase):
         console.reload_models_ui(profile)
         self.assertEqual(console.provider_combo.currentData(), 'qwen_code')
         self.assertEqual(console.model_combo.currentData(), '沿用工具配置')
-        self.assertEqual(console.access_badge.text(), '外部工具尚未授权')
+        self.assertEqual(console.access_badge.text(), '仅聊天')
+        self.assertIn('外部工具尚未授权', console.access_badge.toolTip())
         page.codex.setChecked(True)
         page.save()
         profile = self.profile()
@@ -902,7 +919,10 @@ for line in sys.stdin:
         from qfluentwidgets import CaptionLabel
         texts = lambda card: ' '.join(label.text() for label in card.findChildren(CaptionLabel))
         card = pages_friend.phone_card({'tailnet': None, 'local': 'http://127.0.0.1:8790/', 'token': 't'}, '12345')
-        self.assertIn('没有检测到 Tailscale', texts(card))
+        self.assertIn('远程入口尚未连接', texts(card))
+        self.assertIn('一键打开并配置 Funnel', texts(card))
+        self.assertFalse(any(not label.pixmap().isNull() for label in card.findChildren(pages_friend.QLabel)
+                             if label.pixmap() is not None))
         card = pages_friend.phone_card(
             {'tailnet': 'http://100.64.0.1:8790/', 'local': 'http://127.0.0.1:8790/', 'token': 't'}, '12345')
         self.assertIn('http://100.64.0.1:8790/', texts(card))

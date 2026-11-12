@@ -135,10 +135,14 @@ class LocalPersonaAnalyzerTests(unittest.TestCase):
         with patch('main.codex_text', return_value=('```json\n{"scene":"greeting"}\n```', None)) as call:
             raw, _, _ = analyzer._run('prompt', {'type': 'object'}, None)
         self.assertEqual(raw, '{"scene":"greeting"}')
-        self.assertEqual(call.call_args.kwargs['profile'], profile)
+        actual = call.call_args.kwargs['profile']
+        self.assertEqual(actual['model_api']['provider'], 'custom')
+        self.assertEqual(actual['model_api']['model'], profile['model_api']['model'])
+        self.assertEqual(actual['computer_tools'], {'enabled':False,'commands':False})
+        self.assertEqual(json.loads((self.scope.friend_dir/'friend.json').read_text('utf-8')),profile)
         self.assertTrue(call.call_args.kwargs['ephemeral'])
         self.assertEqual(analyzer.analyze_episode(self.session.id, self.event.event_id, cancel=self._set())['model'],
-                         'deepseek:deepseek-flash')
+                         'custom · deepseek-flash · low')
 
     def test_reply_scene_uses_9b_and_falls_back_to_unknown(self):
         from local_persona_analyzer import reply_scene

@@ -124,7 +124,10 @@ class DotLinkPage(Page):
         elif running:
             self.status.setText("QQ 直连正在运行，等待登录")
             self.status.setTextColor("#B45309", "#FBBF24")
-            self.detail.setText(f"登录阶段：{login.get('phase') or '等待扫码'}"
+            phases = {'waiting_qrcode': '等待扫码', 'generating_qrcode': '正在生成二维码',
+                      'qrcode_scanned': '已扫码，等待确认', 'initializing': '正在初始化',
+                      'ready': '连接就绪', 'offline': '已离线', 'reconnecting': '正在重新连接'}
+            self.detail.setText(f"登录阶段：{phases.get(login.get('phase'), '等待登录')}"
                                 + (f"；{login.get('error')}" if login.get("error") else ""))
         else:
             self.status.setText("QQ 直连未运行" + (f"：{self.state['error']}" if self.state.get("error") else ""))

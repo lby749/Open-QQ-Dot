@@ -15,6 +15,7 @@ import urllib.request
 from urllib.parse import quote
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path, PurePosixPath
+from functools import lru_cache
 from typing import Callable, Optional
 
 DEFAULT_MIRROR = "https://hf-mirror.com"
@@ -24,6 +25,12 @@ RETRY_DELAY = 2  # seconds, multiplied by the attempt number
 DOWNLOAD_TIMEOUT = 60  # a slow 390MB shard needs a longer socket timeout than metadata
 CHUNK_SIZE = 4 * 1024 * 1024  # fewer read/write round trips than 1MB
 PARALLEL_DOWNLOADS = 8  # concurrent small files from a model's `dirs`
+
+
+@lru_cache(maxsize=1)
+def _download_context():
+    from tls_support import client_context
+    return client_context()
 
 # 3-tier model catalog for embedding, rerank, and LLM
 MODEL_CATALOG = {
@@ -222,18 +229,32 @@ MODEL_CATALOG = {
     # SenseVoice-Small: Mandarin, Cantonese, English, Japanese, Korean; it also reports mood and laughter/crying.
     'asr': {
         'small': {
-            'tier_name': '轻量 (Small · INT8 · 约230MB)',
+            'tier_name': '轻量（Q8 / INT8 · 约82MB）',
+            'name': 'Paraformer 中文小模型 Q8',
+            'desc': 'Q8（INT8）中文、英语语音识别；模型文件合计约82MB，在本机 CPU 上运行。首次自动下载，安装包不含权重；不提供语音情绪识别。',
+            'repo_id': 'csukuangfj/sherpa-onnx-paraformer-zh-small-2024-03-09',
+            'revision': '63ddc3cd0f2810b68289a7b3876e62ef5d53d6df',
+            'target_dir': 'data/asr_models/paraformer-small-q8',
+            'engine': 'paraformer',
+            'precision': 'int8',
+            'max_total_bytes': 100_000_000,
+            'sha256': {'model.int8.onnx':'3ef6c19369b912f7caf3cef8e545c5ccd1a33d9d7ec792a46668dc41c4b229ec',
+                       'tokens.txt':'4b2d964e18b9cf139b473003b6698fb2ed9a2a5ec55b93daa677b28f578897aa'},
+            'model_file': 'model.int8.onnx',
+            'files': ['model.int8.onnx', 'tokens.txt'],
+        },
+        'standard': {
+            'tier_name': '常用（SenseVoice · Q8 / INT8 · 约230MB）',
             'name': 'SenseVoice-Small INT8',
-            'desc': 'SenseVoice-Small（2025-09 版）INT8 量化：普通话、粤语、英语、日语、韩语，并能听出开心、难过、生气等情绪和笑声；'
-                    'CPU 上 10 秒语音约 1 秒内识别完，不消耗模型额度。',
+            'desc': '可选的多语种识别模型，支持语音情绪与事件识别；仅手动选择后下载，不属于默认小模型。',
             'repo_id': 'csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09',
             'revision': '355f4d4884d8afd08aef04b9007a8556d7b463b2',
             'target_dir': 'data/asr_models/sense-voice-int8-2025-09-09',
             'model_file': 'model.int8.onnx',
-            'files': ['model.int8.onnx', 'tokens.txt'],
+            'files': ['model.int8.onnx','tokens.txt'],
         },
         'base': {
-            'tier_name': 'medium (Base · FP16 · 约470MB)',
+            'tier_name': '增强（SenseVoice · FP16 · 约470MB）',
             'name': 'SenseVoice-Small FP16',
             'desc': '同一 SenseVoice-Small 模型的全精度版，以 FP16 半精度装配（约930MB 压缩至约470MB）；'
                     '比 INT8 版略准，速度相近，同样只用 CPU。',
@@ -280,10 +301,14 @@ def is_installed(kind: str, tier: str, root: Optional[Path] = None) -> bool:
         if not source.is_file():
             return False
         try:
-            recorded = json.loads(source.read_text('utf-8')).get('files') or {}
+            metadata = json.loads(source.read_text('utf-8'))
+            recorded = metadata.get('files') or {}
         except (OSError, ValueError):
             return False
         if not all(name in recorded for name in tts_runtime_files(cfg)):
+            return False
+        if cfg.get('sha256') and (metadata.get('repo_id') != cfg['repo_id'] or metadata.get('revision') != cfg['revision'] or
+                                 any(recorded.get(name) != expected for name,expected in cfg['sha256'].items())):
             return False
         return all((base / name).is_file() and (base / name).stat().st_size > 0 for name in recorded)
     for filename in cfg['files']:
@@ -413,7 +438,7 @@ class _RangeUnsupported(RuntimeError):
 def _range_probe(url: str, timeout: int) -> tuple[int, bool]:
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) OpenQQDot/1.0'}
     req = urllib.request.Request(url, method='HEAD', headers=headers)
-    with urllib.request.urlopen(req, timeout=timeout) as response:
+    with urllib.request.urlopen(req, timeout=timeout, context=_download_context()) as response:
         total = int(response.headers.get('Content-Length') or 0)
         accepts = 'bytes' in (response.headers.get('Accept-Ranges') or '').lower()
     return total, accepts
@@ -472,7 +497,7 @@ def download_file_ranges(url: str, dest_path: Path, progress_callback: Optional[
                        'Range': f'bytes={start + have}-{end}'}
             try:
                 req = urllib.request.Request(url, headers=headers)
-                with urllib.request.urlopen(req, timeout=timeout) as response:
+                with urllib.request.urlopen(req, timeout=timeout, context=_download_context()) as response:
                     if response.status != 206:
                         raise _RangeUnsupported('server ignored Range')
                     with piece.open('ab' if have else 'wb') as out:
@@ -556,7 +581,7 @@ def download_file(url: str, dest_path: Path, progress_callback: Optional[Callabl
         headers['Range'] = f'bytes={offset}-'
     req = urllib.request.Request(url, headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as response:
+        with urllib.request.urlopen(req, timeout=timeout, context=_download_context()) as response:
             if offset and response.status != 206:
                 offset = 0  # the server ignored the range: start over
             length = int(response.headers.get('Content-Length') or 0)
@@ -607,7 +632,7 @@ def list_repo_files(mirror: str, repo_id: str, revision: str, timeout: int = 30)
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) OpenQQDot/1.0'})
         for attempt in range(1, DOWNLOAD_ATTEMPTS + 1):
             try:
-                with urllib.request.urlopen(req, timeout=timeout) as response:
+                with urllib.request.urlopen(req, timeout=timeout, context=_download_context()) as response:
                     data = json.loads(response.read().decode('utf-8'))
                 break
             except (OSError, http.client.HTTPException) as exc:
@@ -695,7 +720,8 @@ def download_model(kind: str, tier: str, root: Optional[Path] = None,
             return False
         with path.open('rb') as stream:
             actual = hashlib.file_digest(stream, 'sha256').hexdigest()
-        if previous_hashes.get(filename) and previous_hashes[filename] != actual:
+        expected = cfg.get('sha256', {}).get(filename) or previous_hashes.get(filename)
+        if expected and expected != actual:
             invalid.add(filename)
             return False
         file_hashes[filename] = actual
@@ -741,6 +767,11 @@ def download_model(kind: str, tier: str, root: Optional[Path] = None,
         with target_file.open('rb') as f:
             file_hashes[filename] = hashlib.file_digest(f, 'sha256').hexdigest()
 
+    for filename, expected in cfg.get('sha256', {}).items():
+        if file_hashes.get(filename) != expected:
+            raise RuntimeError('模型文件校验失败，未标记就绪：'+filename)
+    if cfg.get('max_total_bytes') and sum((base_dir/name).stat().st_size for name in files) > cfg['max_total_bytes']:
+        raise RuntimeError('模型文件超过约定的体积上限，未标记就绪')
     if members:
         done = total_files - len(members)
         with ThreadPoolExecutor(PARALLEL_DOWNLOADS) as pool:

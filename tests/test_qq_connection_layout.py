@@ -78,6 +78,22 @@ def test_first_open_is_official_with_discoverable_personal_mode(setup_page):
     personal_connect.assert_not_called()
 
 
+def test_selected_connection_text_fits_the_actual_item_font(setup_page, app):
+    build, *_ = setup_page
+    page = build('legacy')
+    app.processEvents()
+    for item in page.mode.items.values():
+        assert item.width() >= item.fontMetrics().horizontalAdvance(item.text()) + 28
+
+
+def test_login_phase_is_shown_in_chinese(setup_page):
+    build, *_ = setup_page
+    page = build('legacy')
+    page.legacy.apply({'running': True, 'accounts': [], 'login': {'phase': 'waiting_qrcode'}})
+    assert '等待扫码' in page.legacy.detail.text()
+    assert 'waiting_qrcode' not in page.legacy.detail.text()
+
+
 def test_personal_content_has_no_nested_page_or_fixed_minimum_height(setup_page, app):
     build, *_ = setup_page
     page = build('legacy')

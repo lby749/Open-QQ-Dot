@@ -73,6 +73,11 @@ class AdapterSettings:
                     fields['protocol'].setRange(1, 2)
                     if backend in ('acp', 'kimi_code'):
                         card.add(row(BodyLabel('协议版本'), fields['protocol'], None))
+                if backend == 'zcode':
+                    fields['model'] = ComboBox()
+                    fetch = PushButton('提取可用模型')
+                    fetch.clicked.connect(lambda _=False: self.fetch_config_models('zcode'))
+                    card.add(row(BodyLabel('模型'), fields['model'], fetch), hint('读取 ZCode 当前模型来源中已启用的模型；思考档位沿用工具配置。'))
             if backend == 'mcp':
                 fields['enabled'] = CheckBox('启用工具服务，供 Codex 与 Claude Code 调用')
                 card.add(fields['enabled'], hint('工具服务不作为独立思考模型；沿用下方命令执行与电脑访问授权。'))
@@ -108,6 +113,12 @@ class AdapterSettings:
                 fields['args'].setText(json.dumps(args, ensure_ascii=False))
                 if 'protocol' in fields:
                     fields['protocol'].setValue(int(config.get('protocol_version', 1)))
+                if 'model' in fields:
+                    fields['model'].clear()
+                    fields['model'].addItem('工具默认', userData='')
+                    if config.get('model'):
+                        fields['model'].addItem(config['model'], userData=config['model'])
+                        fields['model'].setCurrentIndex(1)
             if 'enabled' in fields:
                 fields['enabled'].setChecked(bool(config.get('enabled')))
             fields['status'].setText('尚未检测；沿用工具本机登录配置。')
@@ -217,6 +228,8 @@ class AdapterSettings:
                 else:
                     value.pop(key, None)
         else:
+            if 'model' in fields:
+                value['model'] = fields['model'].currentData() or ''
             program = fields['program'].text().strip()
             args = json.loads(fields['args'].text().strip() or '[]')
             if not isinstance(args, list):
@@ -283,6 +296,26 @@ class AdapterSettings:
 
         run_async(job, done, failed, progress=progress, pool=LONG_POOL)
 
+    def fetch_config_models(self, backend):
+        from agent_backends.capabilities import list_models
+        config = self.value(backend)
+        directory = self.page.house.friend_dir
+        fields = self.fields[backend]
+        fields['status'].setText('正在读取当前来源的模型目录…')
+        def done(result):
+            if self.page.house.friend_dir != directory:
+                return
+            models, source = result
+            combo = fields['model']
+            current = combo.currentData()
+            combo.clear()
+            for model in models:
+                combo.addItem(model, userData=model)
+            combo.setCurrentIndex(max(0, combo.findData(current)))
+            fields['status'].setText(f'已读取 {len(models)} 个模型。{source}；未验证调用额度。')
+        run_async(lambda _: list_models(backend, config), done,
+                  lambda exc: fields['status'].setText('读取模型失败：' + str(exc)), pool=LONG_POOL)
+
     def fetch_models(self):
         """「提取可用模型」: ask the local OpenCode service which models and effort tiers it offers."""
         fields = self.fields['opencode']
@@ -292,10 +325,13 @@ class AdapterSettings:
             fields['status'].setText('配置有误：' + str(exc))
             return
         fields['status'].setText('正在读取模型清单…')
+        directory = self.page.house.friend_dir
         client = LocalOpenCode(config.get('url') or '',
                                password=os.environ.get('OPENCODE_SERVER_PASSWORD', ''))
 
         def done(models):
+            if self.page.house.friend_dir != directory:
+                return
             self.models = models
             combo = fields['model']
             current = combo.currentData()

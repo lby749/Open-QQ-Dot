@@ -120,7 +120,48 @@ def capabilities(config=None):
 
 
 def list_models(config=None):
-    return [], '填写 ZCode 模型来源支持的真实模型 ID；不会替换桌面默认模型。'
+    config = config or {}
+    command = cli_command(config)
+    if not command:
+        raise RuntimeError('未找到 ZCode，请配置已安装的程序路径')
+    personal = Path(os.environ.get('ZCODE_PERSONAL_PROVIDER_CONFIG_FILE') or Path.home() / '.zcode/v2/provider_config.json')
+    settings = json.loads(personal.read_text('utf-8')).get('config') or {}
+    rules = (settings.get('providerConfigRules') or {}).get('providerRules') or []
+    active = [r for r in rules if (r.get('config') or {}).get('enabled') is not False]
+    provider = config.get('provider') or (settings.get('defaultModelSelection') or {}).get('providerId')
+    if not provider and len(active) == 1:
+        provider = active[0]['providerId']
+    rule = next((r for r in active if r.get('providerId') == provider), None)
+    if not rule:
+        raise ValueError('请先在 ZCode 桌面端选择模型来源；不会混用其他来源的模型')
+    entry = next((Path(arg) for arg in command if str(arg).endswith('zcode.cjs')), None)
+    builtin_path = os.environ.get('ZCODE_BUILTIN_PROVIDER_CONFIG_FILE')
+    if not builtin_path and entry:
+        builtin_path = entry.parent.parent / 'config/provider/zcode-builtin.json'
+    builtin = json.loads(Path(builtin_path).read_text('utf-8')).get('config') or {} if builtin_path else {}
+    template = rule.get('templateId') or provider
+    merged = {}
+    definitions = builtin.get('providerConfigRules') or {}
+    for row in definitions.get('templateRules') or []:
+        if row.get('templateId') == template:
+            merged.update(row.get('config') or {})
+    for row in definitions.get('providerRules') or []:
+        if row.get('providerId') == provider:
+            merged.update(row.get('config') or {})
+    merged.update(rule.get('config') or {})
+    models = list(dict.fromkeys([*(merged.get('builtinModelIds') or []), *(merged.get('personalModelIds') or [])]))
+    enabled = {}
+    for source, groups in ((builtin, ('templateModelRules', 'builtinProviderModelRules')),
+                           (settings, ('providerModelRules', 'manualProviderModelRules'))):
+        for group in groups:
+            for row in (source.get('modelConfigRules') or {}).get(group) or []:
+                if row.get('providerId', row.get('templateId')) in (provider, template):
+                    if 'enabled' in (row.get('config') or {}):
+                        enabled[row.get('modelId')] = row['config']['enabled']
+    models = [model for model in models if isinstance(model, str) and model and enabled.get(model) is not False]
+    if not models:
+        raise ValueError('ZCode 当前模型来源没有已启用的模型，未使用预置列表代替')
+    return models, 'ZCode 当前来源 ' + str(provider) + ' 的已启用配置目录；思考档位沿用工具默认'
 
 
 def generate(prompt, directory, profile, *, image_path=None, text_only=False,

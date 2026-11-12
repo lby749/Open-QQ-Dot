@@ -376,7 +376,8 @@ class TestBrowserVideoEcommerce(unittest.TestCase):
             computer_config={"enabled": True, "mode": "read_only", "commands": False, "_owner_id": "user_alice"},
         )
         self.assertFalse(res_d.success)
-        self.assertIn("denied", res_d.error.lower())
+        self.assertIn('没有命令执行权限', res_d.error)
+        self.assertIn('未执行', res_d.error)
 
         engine = LocalHybridSearchEngine(self.work_dir / "retrieval.sqlite3")
         cap_service = CapabilityDiscoveryService(engine)

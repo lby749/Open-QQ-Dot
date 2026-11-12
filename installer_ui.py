@@ -146,9 +146,11 @@ class InstallerApp:
         from windows_installer import default_destination
         return default_destination()
 
-    def _center(self):
+    def _center(self, height=680):
         self.root.update_idletasks()
-        width, height = 920, 680
+        width = min(920, self.root.winfo_screenwidth() - 24)
+        height = min(height, self.root.winfo_screenheight() - 80)
+        self.root.minsize(min(860, width), min(640, height))
         x = (self.root.winfo_screenwidth() - width) // 2
         y = (self.root.winfo_screenheight() - height) // 2
         self.root.geometry(f"{width}x{height}+{max(0, x)}+{max(0, y)}")
@@ -183,7 +185,7 @@ class InstallerApp:
         tk.Label(left_inner, text="安装选项", bg=CARD, fg=INK, font=_font(11, "bold"), anchor="w").pack(fill="x")
         for text, variable in (("创建桌面快捷方式", self.shortcut), ("开机自动启动（可随时关闭）", self.autostart),
                                ("关联 .oqtc / .oqdbackup 文件（双击打开）", self.associate),
-                               ("安装完成后立即启动并连接 QQ（首次需扫码）", self.launch),
+                               ("安装完成后打开应用", self.launch),
                                ("同时安装本地向量运行环境（PyTorch CPU，约 260 MB）", self.runtimes)):
             check = tk.Checkbutton(left_inner, text=text, variable=variable, bg=CARD, fg=INK,
                                    activebackground=CARD, activeforeground=INK, selectcolor="#DBEAFE",
@@ -264,10 +266,10 @@ class InstallerApp:
     def _toggle_log(self):
         if self.log_visible.get():
             self.log_frame.pack(fill="both", expand=True, padx=28, pady=(0, 16))
-            self.root.geometry("920x820")
+            self._center(820)
         else:
             self.log_frame.pack_forget()
-            self.root.geometry("920x680")
+            self._center()
 
     def _browse(self):
         selected = filedialog.askdirectory(title="选择安装目录", initialdir=str(Path(self.destination.get()).parent))

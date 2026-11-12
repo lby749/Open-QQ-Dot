@@ -7,6 +7,7 @@ from PySide6.QtGui import QFontDatabase, QWheelEvent
 
 import tests.test_house_qt as fixture_module
 from house_qt.common import SectionSwitcher
+from tests.test_voice_console import microphone
 
 
 @pytest.fixture
@@ -48,6 +49,160 @@ def test_sidebar_children_are_collapsed_and_live_in_the_scroll_area(house):
         app.processEvents()
         time.sleep(.01)
     assert area.verticalScrollBar().value() > 0
+
+
+def test_original_settings_is_below_friends_and_unverified_accounts_is_last(house):
+    window,app=house
+    window.resize(1250,850);window.show();app.processEvents()
+    panel=window.navigationInterface.panel
+    friends=panel.widget(window.workspaces['friends'].objectName())
+    settings=panel.widget(window.workspaces['settings'].objectName())
+    assert panel.scrollWidget.isAncestorOf(settings)
+    assert settings.mapTo(panel.scrollWidget,QPoint()).y()>friends.mapTo(panel.scrollWidget,QPoint()).y()
+    assert settings.mapTo(panel.scrollWidget,QPoint()).y()<panel.widget(window.workspaces['connection'].objectName()).mapTo(panel.scrollWidget,QPoint()).y()
+    development=panel.widget(window.workspaces['development'].objectName())
+    tutorial=panel.widget(window.workspaces['tutorial'].objectName())
+    assert development.mapTo(panel,QPoint()).y()>tutorial.mapTo(panel,QPoint()).y()
+    assert window.workspaces['development'].tabs.widget(window.workspaces['development'].tabs.count()-1) is window.pages['accountsPreviewPage']
+    agents=window.workspaces['agents'];agents.tabs.setCurrentIndex(1)
+    window.switchTo(agents);app.processEvents()
+    assert agents.tabs.currentWidget() is window.pages['modelPage']
+
+
+def test_prepared_template_is_visible_and_switching_friend_drops_old_state(house,monkeypatch):
+    import json,persona_template
+    from PySide6.QtWidgets import QLabel
+    from house_qt.quick_setup import build_prompts
+    window,app=house
+    monkeypatch.setattr(persona_template,'list_templates',lambda:[])
+    profile=json.loads(window.profile_path.read_text('utf-8'))
+    _,_,profile['prompt_presets']=build_prompts('冷静理性','好朋友','不透露','中性','chat','关闭主动')
+    window.profile_path.write_text(json.dumps(profile),'utf-8')
+    page=window.pages['profilePage'].template_page;page.refresh();app.processEvents()
+    text=' '.join(w.text() for row in page.rows for w in ([row] if isinstance(row,QLabel) else row.findChildren(QLabel)))
+    assert '冷静理性' in text and '12 条' in text and '尚无模板' not in text
+    profile.pop('prompt_presets');window.profile_path.write_text(json.dumps(profile),'utf-8')
+    page.refresh();app.processEvents()
+    text=' '.join(w.text() for row in page.rows for w in ([row] if isinstance(row,QLabel) else row.findChildren(QLabel)))
+    assert '冷静理性' not in text
+
+
+def test_compact_console_keeps_visible_buttons_inside_one_row(house):
+    window,app=house;console=window.pages['workbenchPage']
+    window.switchTo(console)
+    for width in (1050,1460,1180,1050):
+        window.resize(width,800);window.show();app.processEvents();console.fit_input_controls();app.processEvents()
+        controls=[console.btn_attach,console.voice_btn,console.provider_combo,console.model_btn,
+                  console.access_badge,console.options_btn,console.send_btn]
+        visible=[control for control in controls if control.isVisible()]
+        for control in visible:
+            rect=control.geometry()
+            assert console.input_card.rect().contains(rect), (width,control.text(),rect,console.input_card.rect())
+        for left,right in zip(visible,visible[1:]):assert not left.geometry().intersects(right.geometry())
+        assert max(c.geometry().bottom() for c in visible)-min(c.y() for c in visible)<=38
+        assert console.input_card.height()<=135
+    profile={'computer_tools':{'enabled':False},'model_api':{'provider':'codex'}}
+    console.update_access_badge(profile)
+    assert console.access_badge.text()=='仅聊天'
+
+
+def test_persona_editor_refreshes_external_changes_but_preserves_unsaved_draft(house, monkeypatch):
+    import json
+    import house_qt.pages_library as library
+    window, app = house
+    page = window.pages['profilePage'].template_page
+    page.load()
+    profile = json.loads(window.profile_path.read_text('utf-8'))
+    profile['persona'] = '快速配置后更新的常驻指令'
+    window.profile_path.write_text(json.dumps(profile), 'utf-8')
+    page.shown()
+    assert page.persona.toPlainText() == profile['persona']
+    page.persona.insertPlainText('，未保存草稿')
+    draft = page.persona.toPlainText()
+    page.shown()
+    assert page.persona.toPlainText() == draft
+    messages = []
+    monkeypatch.setattr(library, 'toast', lambda *args: messages.append(args))
+    profile['persona'] = '另一个编辑入口刚保存的内容'
+    window.profile_path.write_text(json.dumps(profile), 'utf-8')
+    page.save_persona()
+    assert json.loads(window.profile_path.read_text('utf-8'))['persona'] == profile['persona']
+    assert messages and '其他' in str(messages[-1])
+
+
+def test_console_enter_during_chinese_composition_does_not_submit(house, monkeypatch):
+    from PySide6.QtCore import QEvent
+    from PySide6.QtGui import QInputMethodEvent, QKeyEvent
+    window, app = house
+    console = window.pages['workbenchPage']
+    submitted = []
+    monkeypatch.setattr(console, 'send_message', lambda: submitted.append(True))
+    app.sendEvent(console.input_edit, QInputMethodEvent('拼音候选', []))
+    app.sendEvent(console.input_edit, QKeyEvent(QEvent.KeyPress, Qt.Key_Return, Qt.NoModifier))
+    assert not submitted
+    commit = QInputMethodEvent()
+    commit.setCommitString('中文')
+    app.sendEvent(console.input_edit, commit)
+    app.sendEvent(console.input_edit, QKeyEvent(QEvent.KeyPress, Qt.Key_Return, Qt.NoModifier))
+    assert submitted == [True]
+
+
+def test_voice_input_settings_are_visible_before_the_bulk_download_table(house):
+    window, app = house
+    page = window.pages['modelPage']
+    window.switchTo(page)
+    page.switch_model_section('local')
+    window.show()
+    app.processEvents()
+    assert page._section_cards['local'][0] is page.voice_in_card
+    assert page.voice_in_tier.isVisible() and page.voice_in_download.isVisible()
+    assert all(page.column.indexOf(page.voice_in_card) < page.column.indexOf(card)
+               for card in page._section_cards['local'][1:])
+
+
+def test_voice_button_records_on_first_click_and_stops_on_second(house, microphone, monkeypatch):
+    from PySide6.QtWidgets import QDialog
+    import voice_input
+    import house_qt.voice_capture as capture
+    window, app = house
+    console = window.pages['workbenchPage']
+    window.switchTo(console);window.show();app.processEvents()
+    monkeypatch.setattr(voice_input, 'local_ready', lambda *args: True)
+    monkeypatch.setattr(voice_input, 'transcribe_local', lambda *args: ('识别结果', ''))
+    pending=[]
+    monkeypatch.setattr(capture, 'run_async', lambda job,done,error,**kw:pending.append((job,done,error)))
+    submitted=[];monkeypatch.setattr(console, 'send_message', lambda:submitted.append(True))
+    icon = console.voice_btn.icon().cacheKey()
+    console.voice_btn.click()
+    assert console._voice_capture.state == 'recording' and console.voice_btn.text() == '停止录音'
+    assert console.voice_btn.icon().cacheKey() != icon
+    assert not any(isinstance(widget,QDialog) and widget.isVisible() for widget in app.topLevelWidgets())
+    window.resize(1050,800);app.processEvents();console.fit_input_controls();app.processEvents()
+    controls=[w for w in (console.btn_attach,console.voice_btn,console.provider_combo,console.model_btn,
+              console.access_badge,console.options_btn,console.send_btn) if w.isVisible()]
+    assert all(console.input_card.rect().contains(w.geometry()) for w in controls)
+    assert all(not a.geometry().intersects(b.geometry()) for a,b in zip(controls,controls[1:]))
+    console.voice_btn.click()
+    assert console.voice_btn.text() == '转写中' and not console.voice_btn.isEnabled()
+    job,done,_ = pending[0];done(job(None))
+    assert console.voice_btn.text() == '语音' and console.voice_btn.isEnabled()
+    assert '识别结果' in console.input_edit.toPlainText() and not submitted
+
+
+def test_voice_recording_stops_when_switching_views_and_ignores_late_result(house, microphone, monkeypatch):
+    import voice_input
+    import house_qt.voice_capture as capture
+    window, app = house
+    console = window.pages['workbenchPage']
+    window.switchTo(console);window.show();app.processEvents()
+    monkeypatch.setattr(voice_input, 'local_ready', lambda *args: True)
+    pending=[]
+    monkeypatch.setattr(capture, 'run_async', lambda job,done,error,**kw:pending.append(done))
+    console.voice_btn.click();console.voice_btn.click()
+    window.switchTo(window.overview);app.processEvents()
+    pending[0]('旧录音不得插入')
+    assert console._voice_capture.state == 'idle' and console._voice_capture.audio is None
+    assert '旧录音不得插入' not in console.input_edit.toPlainText()
 
 
 def test_single_page_has_no_switcher_and_repeated_switches_keep_content(house):

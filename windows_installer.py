@@ -80,6 +80,26 @@ _RUNENV_MILESTONES = (
 )
 
 
+def _progress_text(line):
+    if re.search(r'[\u4e00-\u9fff]', line):
+        return line
+    for prefix, label in (('Downloading ', '正在下载：'), ('Downloaded ', '已下载：'),
+                          ('Using CPython ', '使用 Python：'), ('Using Python ', '使用 Python：'),
+                          ('+ ', '正在安装依赖：')):
+        if line.startswith(prefix):
+            return label + line[len(prefix):]
+    for prefix, label in (('Resolved ', '已解析'), ('Installed ', '已安装'),
+                          ('Prepared ', '已准备'), ('Audited ', '已检查')):
+        match = re.match(re.escape(prefix) + r'(\d+) packages?', line)
+        if match:
+            return f'{label} {match.group(1)} 项依赖'
+    if line.startswith('Creating virtual environment'):
+        return '正在创建独立运行环境'
+    if line.strip() == 'OK':
+        return '运行环境检查通过'
+    return '正在配置运行环境，详细信息见安装日志。'
+
+
 class _StageProgress:
     """Monotonic progress inside one install stage, plus a readable status line."""
 
@@ -111,7 +131,7 @@ class _StageProgress:
         if fraction is not None:
             percent = max(self.last, self.low + (self.high - self.low) * fraction)
             self.last = percent
-        self.callback({'percent': percent, 'text': line})
+        self.callback({'percent': percent, 'text': _progress_text(line)})
 
 
 class InstallError(RuntimeError):
@@ -925,7 +945,7 @@ def run_install(resources, destination, emit, launch=True, options=None, on_step
                 low, high = PROGRESS_VERIFY
                 on_progress({'percent': None if percent is None
                              else low + (high - low) * max(0.0, min(100.0, percent)) / 100.0,
-                             'text': str(text)})
+                             'text': _progress_text(str(text))})
 
             outcome = local_runtimes.install(
                 'embedding', destination, emit=runtime_progress, cancel_event=cancel_event)

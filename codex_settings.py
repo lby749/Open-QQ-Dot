@@ -19,6 +19,8 @@ def cli_path(custom_path: str | None = None) -> str | None:
     if found:
         return found
     candidates = [
+        Path(os.environ.get('LOCALAPPDATA', '')) / 'Programs/OpenAI/Codex/bin/codex.exe',
+        Path(os.environ.get('CODEX_HOME', Path.home() / '.codex')) / 'packages/standalone/current/codex.exe',
         Path(os.environ.get('APPDATA', '')) / 'npm' / 'codex.cmd',
         Path(os.environ.get('APPDATA', '')) / 'npm' / 'codex.ps1',
         Path(os.environ.get('ProgramFiles', 'C:\\Program Files')) / 'nodejs' / 'codex.cmd',

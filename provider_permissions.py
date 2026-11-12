@@ -55,3 +55,16 @@ def with_provider_approval(profile, provider):
     tools["approval_mode"] = approval_for(profile, provider)
     value["computer_tools"] = tools
     return value
+
+
+def denied_reply(profile):
+    """A friend-owned explanation can never replace the factual denial status."""
+    text = (profile or {}).get('permission_denied_reply', '')
+    text = text.strip() if isinstance(text, str) else ''
+    status = '没有所需权限，受限操作没有继续执行。'
+    return status + ('\n' + text if text and len(text) <= 1200 else '')
+
+
+def permission_denied(error):
+    from agent_errors import AgentErrorType
+    return isinstance(error, PermissionError) or getattr(error, 'error_type', None) == AgentErrorType.PERMISSION_DENIED

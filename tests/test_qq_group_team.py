@@ -239,13 +239,18 @@ def test_closed_branch_is_excluded_from_planner_and_late_deliveries_are_revoked(
     assert state['deliveries'][0]['state'] == 'REVOKED'
 
 
-def test_disabled_root_rejects_before_scheduling_or_generating_anything(setup):
+def test_disabled_root_replies_once_without_running_a_model_or_dispatching(setup):
     agent_group.update_node(setup.base, setup.owner, setup.room['id'], setup.host['id'], enabled=False)
     with pytest.raises(PermissionError):
         setup.team.start_local(setup.owner, setup.room['id'], '不应执行', 'closed-root')
     assert setup.team.receive(event())
-    assert setup.calls == setup.sent == []
-    assert team_module.snapshot(setup.base, setup.owner, setup.room['id'])['runs'] == []
+    assert setup.calls == []
+    assert len(setup.sent) == 1 and '没有所需权限' in setup.sent[0][1]
+    state = team_module.snapshot(setup.base, setup.owner, setup.room['id'])
+    assert state['runs'][0]['status'] == 'FAILED'
+    assert state['runs'][0]['summary_receipt'] == 'MAIN_RECEIPT'
+    assert setup.team.receive(event())
+    assert len(setup.sent) == 1
 
 
 def test_invalid_model_plan_stops_before_worker_or_public_dispatch(setup):

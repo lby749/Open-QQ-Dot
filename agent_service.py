@@ -8,6 +8,8 @@ from __future__ import annotations
 import json
 import os
 import re
+import threading
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -15,6 +17,77 @@ import codex_settings
 import session_manager
 
 ROOT = Path(os.environ.get('QQ_BRIDGE_HOME', Path(__file__).resolve().parent))
+_qq_sync_lock = threading.Lock()
+_qq_sync_at = {}
+
+
+def qq_stream(qq):
+    """One receipt-backed conversation for desktop and paired phone, never a task session."""
+    from store import FriendStore
+    from qq_link import QQClient
+    from main import message_parts
+    qq = str(qq or '')
+    record = json.loads((ROOT/'friends.json').read_text('utf-8')).get('friends', {}).get(qq)
+    if not record:
+        raise PermissionError('该好友尚未绑定，不能读取 QQ 会话')
+    directory = _friend_dir(qq)
+    account = str(record.get('self_id') or '')
+    key = (str(directory.resolve()), account)
+    warning = ''
+    with _qq_sync_lock:
+        fetch = time.monotonic() - _qq_sync_at.get(key, -10) >= 5
+        if fetch:
+            _qq_sync_at[key] = time.monotonic()
+    if fetch and record.get('platform') != 'qq_official':
+        client = None
+        try:
+            client = QQClient()
+            login = client.call('get_login_info', timeout=3)
+            if not account.isdigit() or str(login.get('user_id')) != account:
+                raise PermissionError('当前 QQ 账号与好友绑定不一致，未同步其他账号的消息')
+            value = client.call('get_friend_msg_history', {'user_id':int(qq),'count':50}, timeout=3)
+            history = value.get('messages', []) if isinstance(value,dict) else value
+            store = FriendStore(directory)
+            try:
+                after = float(store.get('qq_outgoing_sync_after', str(time.time()-300)))
+                latest = after
+                for item in history or []:
+                    stamp = float(item.get('time') or 0)
+                    if (str(item.get('user_id')) != account or stamp < after or
+                            item.get('message_type', 'private') != 'private' or
+                            str(item.get('target_id') or qq) != qq or not item.get('message_id')):
+                        continue
+                    text, _ = message_parts(item)
+                    if text:
+                        existing = store.db.execute('SELECT 1 FROM messages WHERE qq_id=?',(str(item['message_id']),)).fetchone()
+                        if not existing:
+                            store.add_message(str(item['message_id']), 'me', text,
+                                datetime.fromtimestamp(stamp).astimezone().isoformat())
+                    latest = max(latest,stamp)
+                store.set('qq_outgoing_sync_after', str(max(after,latest-1)))
+            finally:
+                store.close()
+        except PermissionError:
+            with _qq_sync_lock:
+                _qq_sync_at.pop(key, None)
+            raise
+        except Exception:
+            warning = 'QQ 实时同步暂不可用，当前显示已保存记录；不会重发消息'
+        finally:
+            if client:
+                client.close()
+    store = FriendStore(directory)
+    try:
+        rows = store.recent_messages(80)
+    finally:
+        store.close()
+    rows.sort(key=lambda m:(m['created_at'],m['seq']))
+    messages = [{'id':'qq_'+str(m['qq_id']),'role':'user' if m['direction']=='me' else 'assistant',
+        'direction':m['direction'],'identity':m['identity'],'content':m['body'],'thinking':'',
+        'agent_name':record.get('display_name',qq) if m['direction']=='friend' else '我（QQ）',
+        'timestamp':m['created_at'],'delivery_status':'已接收' if m['direction']=='friend' else
+            '发送未确认' if str(m['qq_id']).startswith('local:') else 'QQ 已确认'} for m in rows]
+    return {'id':'__qq_stream__','title':'QQ 实时联动通道','messages':messages,'is_qq':True,'sync_warning':warning}
 
 
 def send_friend_attachment(qq, path, kind='auto'):

@@ -16,6 +16,7 @@ import subprocess
 import tempfile
 import urllib.request
 from pathlib import Path
+from tls_support import client_context
 
 RELEASE_API = "https://api.github.com/repos/anomalyco/opencode/releases/latest"
 # Used only when the GitHub API is rate-limited; digest is from the official
@@ -47,7 +48,7 @@ def _release_info() -> tuple[str, str, str]:
     """(installer url, sha256, version) from the latest official release."""
     req = urllib.request.Request(RELEASE_API, headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(req, timeout=20) as response:
+        with urllib.request.urlopen(req, timeout=20, context=client_context()) as response:
             data = json.loads(response.read(2_000_000))
         for asset in data.get("assets") or []:
             if asset.get("name") != "opencode-desktop-win-x64.exe":
@@ -70,7 +71,7 @@ def download_installer(target: Path, progress=None) -> tuple[Path, str]:
     digest = hashlib.sha256()
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(req, timeout=90) as response, temporary.open("wb") as out:
+        with urllib.request.urlopen(req, timeout=90, context=client_context()) as response, temporary.open("wb") as out:
             total = int(response.headers.get("Content-Length") or 0)
             done = 0
             while True:

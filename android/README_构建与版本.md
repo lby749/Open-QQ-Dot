@@ -1,19 +1,18 @@
 # Open QQ Dot 蓝色手机版（BETA）
 
-这是最终发布目录中 23 MB / 30 MB 手机版的原生源码，入口为 `FriendHouseActivity`。
+这是蓝色正式手机版的原生源码，入口为 `FriendHouseActivity`。
 页面使用电脑端 `house_web.html`，并保留扫码配对、手机权限、手机本机 MCP 服务和主动连接电脑的中继。
 项目根目录 `mobile/` 是另一套历史原生预览，不能替代本目录构建正式手机版。
 
 ## 来源与升级
 
-本目录于 2026-11-11 从本机 `D:/phone_build/android` 冻结；其好友入口与
-`D:/Projects/project2/phone_app/android` 相同。上游 Android Remote Control MCP、ngrok 等许可保留在源码中。
+本目录保留原蓝色好友入口。上游 Android Remote Control MCP、ngrok 等许可保留在源码中。
 本轮移除了对机器本地 `vendor/**/target/*.jar` 的依赖，直接编译随包附带的 ngrok Java 源码。
 不需要随源码附带 Rust 编译缓存、预编译的目标目录或签名私钥。
 
 - 包名：`com.danielealbano.androidremotecontrolmcp`
 - 入口：`com.danielealbano.androidremotecontrolmcp.ui.FriendHouseActivity`
-- 本轮版本：`versionCode=5`、`versionName=1.0.0-beta.3`
+- 本轮版本：`versionCode=6`、`versionName=1.0.0-beta.4`
 - 系统要求：Android 13（API 33）及以上，arm64-v8a。
 - `foss` 不包含 Google OCR；`gms` 包含 Google OCR / 相关服务支持。
   两种发行包使用相同包名，不能同时安装。覆盖安装须使用相同证书，不要先卸载。
@@ -30,7 +29,7 @@
 依赖已缓存时使用 `--offline`，不需要重复下载 SDK 或依赖。
 
 ```powershell
-./gradlew.bat '--offline' '--no-daemon' '-PVERSION_CODE=5' '-PVERSION_NAME=1.0.0-beta.3' 'assembleFossRelease' 'assembleGmsRelease'
+./gradlew.bat '--offline' '--no-daemon' '-PVERSION_CODE=6' '-PVERSION_NAME=1.0.0-beta.4' 'assembleFossRelease' 'assembleGmsRelease'
 ```
 
 输出位于 `app/build/outputs/apk/{foss,gms}/release/`。
@@ -41,7 +40,7 @@
 更新、项目源码和反馈入口与电脑端共用上一级 `release_source.json` 的 `repository`，本轮为
 `lby749/Open-QQ-Dot`。缺失、格式错误或非法仓库名时，不会向上游组件仓库检查更新。
 若独立复制本目录构建，可显式传入 `-PRELEASE_SOURCE_FILE=配置文件路径`；此配置仅含公开仓库名。
-BETA 构建通过发行列表选取语义版本最高的非草稿记录，正式版仍使用正式发行接口；只接受本项目的发行链接。不同 BETA 的通知保留完整版本号，不折叠为同一个 1.0.0。来源、网络或解析失败时不会冒充检查成功。本轮结果见 `../docs/ANDROID_BETA3.md`。
+BETA 构建通过发行列表选取语义版本最高的非草稿记录，正式版仍使用正式发行接口；只接受本项目的发行链接。不同 BETA 的通知保留完整版本号，不折叠为同一个 1.0.0。来源、网络或解析失败时不会冒充检查成功。历史结果见 `../docs/ANDROID_BETA3.md`，本轮范围见发行附件 `Validation.json`。
 
 默认精简包已排除 cloudflared、ngrok 与 ONNX 的可选原生库。
 这些可选能力不能因页面存在而被视作默认包已验证；若要构建完整原生功能包，需自行准备对应

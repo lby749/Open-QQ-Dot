@@ -17,10 +17,11 @@ from datetime import datetime
 from pathlib import Path
 
 import time
+import threading
 from PySide6.QtCore import QSize, Qt, QTimer
 from PySide6.QtGui import QColor, QPalette, QTextCursor
 from PySide6.QtWidgets import (QFileDialog, QFrame, QHBoxLayout, QLabel,
-                             QListWidgetItem, QScrollArea, QSizePolicy, QVBoxLayout, QWidget)
+                             QListWidgetItem, QScrollArea, QSizePolicy, QStyle, QVBoxLayout, QWidget)
 from PySide6.QtWidgets import QTreeWidgetItem
 from qfluentwidgets import (Action, BodyLabel, CaptionLabel, CheckBox, ComboBox, FluentIcon,
                             IconWidget, IndeterminateProgressRing, ListWidget, PlainTextEdit, PrimaryPushButton,
@@ -28,6 +29,7 @@ from qfluentwidgets import (Action, BodyLabel, CaptionLabel, CheckBox, ComboBox,
                             TransparentToolButton, TreeWidget)
 
 import codex_settings
+import agent_service
 import session_manager
 import skill_registry
 from store import FriendStore
@@ -437,7 +439,7 @@ class CommandSuggestionWidget(QFrame):
             ("⚡ Fast 模式", "Toggle Fast Mode Acceleration", "", "action_fast_toggle"),
             ("📊 运行状态", "查看当前会话 ID、上下文与网络", "", "action_status"),
             ("💡 计划模式", "查看与排班智能体自主任务与规划", "", "action_plan"),
-            ("🧠 Long-Term Memory", "检索好友长期事实记忆", "", "insert_mention_memory"),
+            ("🧠 长期记忆", "检索好友长期事实记忆", "", "insert_mention_memory"),
             ("📚 话题知识", "检索并关联深度话题研究库", "", "insert_mention_topic"),
             ("🎭 设定模板", "切换机前参照的设定模板口吻", "", "insert_mention_template"),
             ("📌 沉淀记忆", "提炼当前会话核心事实至长期记忆", "", "action_extract_memory"),
@@ -458,7 +460,7 @@ class CommandSuggestionWidget(QFrame):
         mentions = [
             ("📎 文件和文件夹", "浏览并引用工作区中的代码或文档", "", "insert_file"),
             ("📁 文件夹…", "引用一个文件夹路径，模型可据此读取", "", "insert_folder"),
-            ("🧠 Long-Term Memory", "关联好友长期事实记忆与画像", "", "insert_mention_memory"),
+            ("🧠 长期记忆", "关联好友长期事实记忆与画像", "", "insert_mention_memory"),
             ("📚 Topic Knowledge Library", "关联深度话题研究知识库", "", "insert_mention_topic"),
             ("🎭 设定模板", "引用设定模板说话口吻与范例", "", "insert_mention_template"),
             ("💡 主动计划", "引用智能体自主任务与规划", "", "insert_mention_plan"),
@@ -802,6 +804,7 @@ class AgentConsolePage(QWidget):
 
         self.input_card = QFrame(input_container)
         self.input_card.setObjectName("inputCard")
+        self.input_card.installEventFilter(self)
         self.input_card.setStyleSheet("""
             QFrame#inputCard {
                 background: #FFFFFF;
@@ -810,12 +813,12 @@ class AgentConsolePage(QWidget):
             }
         """)
         input_layout = QVBoxLayout(self.input_card)
-        input_layout.setContentsMargins(16, 12, 16, 12)
-        input_layout.setSpacing(8)
+        input_layout.setContentsMargins(12, 8, 12, 8)
+        input_layout.setSpacing(6)
 
         self.input_edit = PlainTextEdit(self.input_card)
         self.input_edit.setPlaceholderText("输入消息，Enter 发送，Shift+Enter 换行")
-        self.input_edit.setFixedHeight(75)
+        self.input_edit.setFixedHeight(62)
         self.input_edit.setStyleSheet("border: none; background: transparent; font-size: 13.5px; "
                                      "line-height: 1.5; color: #0F172A; padding: 2px 2px 0 2px;")
         # 2026-10-26 user: the placeholder read like typed text and could be mistaken for overlapping input.
@@ -831,6 +834,18 @@ class AgentConsolePage(QWidget):
         self.btn_attach.setToolTip(tr("Attach project file reference"))
         self.btn_attach.setFixedSize(26, 26)
         self.btn_attach.clicked.connect(self.choose_and_attach_file)
+        self.voice_btn = PushButton('语音', self.input_card)
+        self.voice_btn.setIcon(FluentIcon.MICROPHONE.qicon())
+        self.voice_btn.setFixedHeight(30)
+        self.voice_btn.setToolTip('本地语音输入：转写后确认发送')
+        self.voice_btn.clicked.connect(self.voice_input)
+        self._voice_preparing = False
+        self._voice_capture, self._voice_scope = None, None
+        self._voice_cancel = threading.Event()
+        self.house.destroyed.connect(lambda:self._voice_cancel.set())
+        self.options_btn = PushButton('更多', self.input_card)
+        self.options_btn.setFixedHeight(30)
+        self.options_btn.clicked.connect(self.input_options)
 
         # Approval / Access Badge (Clickable to switch permissions)
         self.access_badge = PushButton(tr("Full Access"), self.input_card)
@@ -927,35 +942,22 @@ class AgentConsolePage(QWidget):
         """)
         self.send_btn.clicked.connect(self.send_message)
 
-        # 2026-10-26 user: "输入消息的时候会重叠" — in a narrow window one row could not fit the badge, the two
-        # selectors and the send button, and Qt squeezed them on top of each other. Actions stay on the first
-        # row, model choice on its own second row, so nothing overlaps at any width.
+        # Keep one compact row. Less-frequent controls remain available in the overflow menu.
         row_actions = QHBoxLayout()
         row_actions.setContentsMargins(0, 0, 0, 0)
         row_actions.setSpacing(8)
         row_actions.addWidget(self.btn_attach)
+        row_actions.addWidget(self.voice_btn)
+        row_actions.addWidget(self.provider_combo)
+        row_actions.addWidget(self.model_btn)
         row_actions.addWidget(self.access_badge)
-        row_actions.addWidget(self.input_mode_combo)
         row_actions.addStretch(1)
-        row_actions.addWidget(self.fast_chk)
+        row_actions.addWidget(self.options_btn)
         row_actions.addWidget(self.send_btn)
-
-        row_model = QHBoxLayout()
-        row_model.setContentsMargins(0, 0, 0, 0)
-        row_model.setSpacing(8)
-        # 2026-10-26 user: 这一行右侧对齐，左边空出一大片。改成靠左对齐，和上面的 + 对齐。
-        row_model.addWidget(self.provider_combo)
-        row_model.addWidget(self.model_btn)
-        row_model.addStretch(1)
-
-        btm_bar = QVBoxLayout()
-        btm_bar.setContentsMargins(0, 0, 0, 0)
-        btm_bar.setSpacing(6)
-        btm_bar.addLayout(row_actions)
-        btm_bar.addLayout(row_model)
+        self.fast_chk.hide();self.input_mode_combo.hide()
 
         input_layout.addWidget(self.input_edit)
-        input_layout.addLayout(btm_bar)
+        input_layout.addLayout(row_actions)
         ic_layout.addWidget(self.input_card)
         chat_layout.addWidget(input_container)
 
@@ -1053,7 +1055,15 @@ class AgentConsolePage(QWidget):
             self.suggestion_panel.hide()
 
     def eventFilter(self, obj, event):
-        if obj is self.input_edit and event.type() == event.Type.KeyPress:
+        if obj is getattr(self,'input_card',None) and event.type()==event.Type.Resize:
+            self.fit_input_controls()
+        if obj is getattr(self,'input_edit',None):
+            if event.type() == event.Type.InputMethod:
+                self._input_composing = bool(event.preeditString())
+            elif event.type() == event.Type.FocusOut:
+                self._input_composing = False
+        if (obj is getattr(self,'input_edit',None) and event.type() == event.Type.KeyPress
+                and not getattr(self, '_input_composing', False)):
             if self.suggestion_panel.isVisible():
                 if event.key() == Qt.Key_Down:
                     self.suggestion_panel.move_selection(1)
@@ -1331,8 +1341,26 @@ class AgentConsolePage(QWidget):
     def _sync_profile_changes(self):
         """Pick up model/persona edits made from the phone without restarting."""
         qq = self.house.current_qq
+        self.fit_input_controls()
         if not qq or self.loaded_for != qq:
             return
+        if self.isVisible() and self.active_session_id == '__qq_stream__' and not getattr(self, '_qq_sync_pending', False):
+            from .common import run_async, LONG_POOL
+            self._qq_sync_pending = True
+            def done(data):
+                from shiboken6 import isValid
+                if not isValid(self):
+                    return
+                self._qq_sync_pending = False
+                if self.house.current_qq != qq or self.active_session_id != '__qq_stream__':
+                    return
+                signature = [(m['id'], m['content']) for m in data['messages']]
+                if signature != getattr(self, '_qq_stream_signature', None):
+                    self._qq_stream_signature = signature
+                    self.load_session_ui('__qq_stream__')
+            def failed(_error):
+                self._qq_sync_pending = False
+            run_async(lambda _: agent_service.qq_stream(qq), done, failed, pool=LONG_POOL)
         try:
             mtime = self.house.profile_path.stat().st_mtime
         except OSError:
@@ -1343,9 +1371,106 @@ class AgentConsolePage(QWidget):
         else:
             self._profile_mtime = mtime
 
+    def fit_input_controls(self):
+        if not hasattr(self,'send_btn'):return
+        width=self.input_card.width()
+        self.provider_combo.setVisible(width>=720)
+        self.access_badge.setVisible(width>=790)
+        self.fast_chk.hide();self.input_mode_combo.hide()
+
+    def input_options(self):
+        menu=RoundMenu(parent=self)
+        for index in range(self.input_mode_combo.count()):
+            action=Action(self.input_mode_combo.itemText(index),menu)
+            action.setCheckable(True);action.setChecked(index==self.input_mode_combo.currentIndex())
+            action.triggered.connect(lambda _=False,index=index:self.input_mode_combo.setCurrentIndex(index))
+            action.setEnabled(self.active_session_id!='__qq_stream__');menu.addAction(action)
+        fast=Action('快速模式',menu);fast.setCheckable(True);fast.setChecked(self.fast_chk.isChecked())
+        fast.setEnabled(getattr(self,'_fast_supported',False));fast.triggered.connect(lambda checked:self.fast_chk.setChecked(checked));menu.addAction(fast)
+        menu.addSeparator()
+        for index in range(self.provider_combo.count()):
+            action=Action('智能体：'+self.provider_combo.itemText(index),menu)
+            action.triggered.connect(lambda _=False,index=index:self.provider_combo.setCurrentIndex(index));menu.addAction(action)
+        menu.exec(self.options_btn.mapToGlobal(self.options_btn.rect().bottomLeft()))
+
+    def prepare_voice(self):
+        if self._voice_preparing:return
+        from house_settings import root
+        import voice_input
+        self._voice_preparing=True;self.voice_btn.setToolTip('正在准备小型语音识别模型，界面可继续使用')
+        def done(result):
+            from shiboken6 import isValid
+            if not isValid(self):return
+            if not result.get('ready'):return failed(RuntimeError('模型校验未通过'))
+            self._voice_preparing=False
+            self.voice_btn.setToolTip('语音输入已就绪；在本机识别，不自动发送')
+        def failed(error):
+            from shiboken6 import isValid
+            if not isValid(self):return
+            self._voice_preparing=False
+            self.voice_btn.setToolTip('语音模型准备未完成，点击语音重试：'+str(error)[:180])
+        def progress(value):
+            from shiboken6 import isValid
+            if isValid(self):self.voice_btn.setToolTip('正在准备语音：'+str(value[1]))
+        run_async(lambda report:voice_input.ensure_default(root(),progress=lambda percent,text:report((percent,text)),
+            cancel_event=self._voice_cancel),done,failed,progress,pool=LONG_POOL)
+
+    def voice_input(self):
+        from house_settings import root
+        from .voice_capture import VoiceRecorder
+        import voice_input
+        if self._voice_capture and self._voice_capture.state == 'recording':
+            self._voice_capture.finish_recording()
+            return
+        if self._voice_capture and self._voice_capture.state == 'permission':
+            self._voice_capture.cancel()
+            return
+        if self._voice_capture and self._voice_capture.state == 'transcribing':
+            return
+        if not self.house.current_qq:
+            return toast(self.house,'info','请先添加并选择好友，再使用语音输入。')
+        if self._voice_preparing:
+            return toast(self.house,'info','小型语音模型正在准备，完成后即可录音。')
+        from house_status import load_profile
+        tier=voice_input.settings(load_profile(self.house.profile_path))['tier']
+        if not voice_input.local_ready({'tier':tier},root()):
+            if tier == 'small':self.prepare_voice()
+            else:return toast(self.house,'info','所选语音模型尚未下载，请在语音识别设置中一键下载。')
+            return toast(self.house,'info','正在准备小型语音模型，已有文件会复用。')
+        if not self._voice_capture:
+            self._voice_capture = VoiceRecorder(self, root(), tier)
+            self._voice_capture.stateChanged.connect(self.update_voice_button)
+            self._voice_capture.textReady.connect(self.insert_voice_text)
+            from PySide6.QtWidgets import QApplication
+            QApplication.instance().aboutToQuit.connect(self._voice_capture.cancel)
+        self._voice_capture.root, self._voice_capture.tier = root(), tier
+        self._voice_scope = (self.house.current_qq,self.active_ws_id,self.active_session_id)
+        self._voice_capture.start()
+
+    def update_voice_button(self, state, message):
+        recording = state == 'recording'
+        self.voice_btn.setText('停止录音' if recording else '转写中' if state == 'transcribing' else '语音')
+        self.voice_btn.setIcon(self.style().standardIcon(QStyle.SP_MediaStop) if recording else FluentIcon.MICROPHONE.qicon())
+        self.voice_btn.setEnabled(state != 'transcribing')
+        self.voice_btn.setToolTip(message or '点击开始录音，再点一次停止并转写')
+        self.fit_input_controls()
+        if state == 'error':
+            toast(self.house, 'warning', message, '语音输入')
+
+    def insert_voice_text(self, text):
+        if self._voice_scope == (self.house.current_qq,self.active_ws_id,self.active_session_id):
+            self.input_edit.insertPlainText(text)
+
+    def hideEvent(self, event):
+        if getattr(self, '_voice_capture', None):
+            self._voice_capture.cancel()
+        super().hideEvent(event)
+
     def reload(self):
         """Reload Projects tree, persona templates, and real Codex model controls."""
         qq = self.house.current_qq
+        if self._voice_capture and self._voice_scope != (qq,self.active_ws_id,self.active_session_id):
+            self._voice_capture.cancel()
         if not qq:
             return
 
@@ -1432,7 +1557,11 @@ class AgentConsolePage(QWidget):
             mapping = {'never': '无需审批', 'on-request': '按需确认', 'request-review': '严格审批'}
             badge_text = mapping.get(approval, '无需审批')
 
-        self.access_badge.setText(badge_text)
+        access = ('仅聊天' if not tools.get('enabled') else '只读查看' if tools.get('mode') == 'read_only' or tools.get('read_only') else
+                  '完全访问' if tools.get('full_computer_access') and tools.get('commands') else
+                  '全盘读写' if tools.get('full_computer_access') else '工作区读写')
+        self.access_badge.setText(access)
+        self.access_badge.setToolTip('电脑权限：'+access+'；智能体审批：'+badge_text)
 
     def on_access_badge_clicked(self):
         qq = self.house.current_qq
@@ -1482,7 +1611,7 @@ class AgentConsolePage(QWidget):
             menu_item(menu, FluentIcon.SYNC.qicon(), "🔄 Refresh QQ ", self.refresh_current_view)
         else:
             menu_item(menu, FluentIcon.EDIT.qicon(), "✏️ 重命名对话", self.rename_current_session)
-            menu_item(menu, FluentIcon.PIN.qicon(), "📌 toLong-Term Memory", self.save_conversation_to_memory)
+            menu_item(menu, FluentIcon.PIN.qicon(), "📌 保存到长期记忆", self.save_conversation_to_memory)
             menu_item(menu, FluentIcon.FOLDER.qicon(), "📁 打开所在项目文件夹", lambda: self.open_in_explorer(ws_id))
             menu.addSeparator()
             menu_item(menu, FluentIcon.DELETE.qicon(), "🧹 清空本会话记录", lambda: self.clear_specific_session(ws_id, sid))
@@ -1496,7 +1625,7 @@ class AgentConsolePage(QWidget):
             return
         self.is_generating = False
         self.send_btn.setEnabled(True)
-        self.send_btn.setText(tr("发送指令 (Enter)"))
+        self.send_btn.setText('发送')
         self.send_btn.setStyleSheet("")
         if hasattr(self, 'working_widget'):
             self.working_widget.setVisible(False)
@@ -1557,6 +1686,7 @@ class AgentConsolePage(QWidget):
         self.populate_provider_models(current_provider, profile)
 
         # 3. Update Fast Mode
+        self._fast_supported = current_provider in ('codex','custom')
         if current_provider in ('codex', 'custom'):
             self.fast_chk.setVisible(True)
             curr_fast = api.get('codex_fast', False)
@@ -1568,6 +1698,7 @@ class AgentConsolePage(QWidget):
 
         # 4. Update Access / Approval Badge
         self.update_access_badge(profile)
+        self.fit_input_controls()
 
     def get_provider_model_structure(self, actual_provider: str):
         """Return (header_title, main_models, overflow_models) matching Codex and Claude Code client UX."""
@@ -2259,7 +2390,7 @@ class AgentConsolePage(QWidget):
                 menu_item(menu, FluentIcon.SYNC.qicon(), "🔄 Refresh QQ ", self.refresh_current_view)
             else:
                 menu_item(menu, FluentIcon.EDIT.qicon(), "✏️ 重命名对话", lambda: self.rename_session_dialog(ws_id, sid, item.text(0)))
-                menu_item(menu, FluentIcon.PIN.qicon(), "📌 toLong-Term Memory", self.save_conversation_to_memory)
+                menu_item(menu, FluentIcon.PIN.qicon(), "📌 保存到长期记忆", self.save_conversation_to_memory)
                 menu_item(menu, FluentIcon.FOLDER.qicon(), "📁 打开所在项目文件夹", lambda: self.open_in_explorer(ws_id))
                 menu.addSeparator()
                 menu_item(menu, FluentIcon.DELETE.qicon(), "🧹 清空该对话记录", lambda: self.clear_specific_session(ws_id, sid))
@@ -2491,9 +2622,11 @@ class AgentConsolePage(QWidget):
         self.metric_context.setText(f"{percent}%")
 
     def load_session_ui(self, session_id: str):
+        if self._voice_capture and self._voice_scope != (self.house.current_qq,self.active_ws_id,session_id):
+            self._voice_capture.cancel()
         self.active_session_id = session_id
         self.btn_attach.setToolTip('发送 QQ 文件、图片或视频' if session_id == '__qq_stream__' else '引用项目文件')
-        self.input_mode_combo.setVisible(session_id != '__qq_stream__')
+        self.input_mode_combo.setVisible(False)
         key = (self.house.current_qq, self.active_ws_id, session_id)
         self.input_mode_combo.blockSignals(True)
         self.input_mode_combo.setCurrentIndex(
@@ -2514,7 +2647,7 @@ class AgentConsolePage(QWidget):
             self.ws_badge.setText("通道: QQ 实时私聊")
             self.btn_refresh_qq.setVisible(True)
             self.input_edit.setPlaceholderText(f"输入要通过 QQ 发送给「{friend_name}」的私聊消息（Enter 发送）…")
-            self.send_btn.setText('发送 QQ 消息（回车）')
+            self.send_btn.setText('发送 QQ')
 
             from house_status import ROOT
             store = FriendStore(ROOT / 'friends' / qq)
@@ -2539,14 +2672,15 @@ class AgentConsolePage(QWidget):
                         'content': item.get('body', ''),
                         'timestamp': item.get('created_at', '')
                     }
-                    role_tag = f"{friend_name} (QQ 来信)" if is_friend else f"{agent_display} (QQ 回复)"
+                    role_tag = f"{friend_name}（QQ 来信）" if is_friend else (
+                        f"{agent_display}（QQ 回复）" if item.get('identity') == 'model' else '我（QQ 发出）')
                     card = MessageCard(msg_data, agent_name=role_tag, parent=self.messages_container)
                     self.messages_layout.insertWidget(self.messages_layout.count() - 1, card)
 
         # Mode B: Independent Agent Project / Workbench Session (OnAgent)
         else:
             self.btn_refresh_qq.setVisible(False)
-            self.send_btn.setText(tr("发送指令 (Enter)"))
+            self.send_btn.setText('发送')
             self.input_edit.setPlaceholderText("输入任务指令，Enter 发送，Shift+Enter 换行")
 
             data = session_manager.load_session(qq, session_id, self.active_ws_id)
@@ -2897,7 +3031,7 @@ class AgentConsolePage(QWidget):
                 return
             self.is_generating = False
             self.send_btn.setEnabled(True)
-            self.send_btn.setText(tr("发送指令 (Enter)"))
+            self.send_btn.setText('发送')
             self.send_btn.setStyleSheet("")
             if hasattr(self, 'working_widget'):
                 self.working_widget.setVisible(False)
@@ -2933,7 +3067,7 @@ class AgentConsolePage(QWidget):
                 return
             self.is_generating = False
             self.send_btn.setEnabled(True)
-            self.send_btn.setText(tr("发送指令 (Enter)"))
+            self.send_btn.setText('发送')
             self.send_btn.setStyleSheet("")
             if hasattr(self, 'working_widget'):
                 self.working_widget.setVisible(False)

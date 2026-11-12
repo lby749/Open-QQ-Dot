@@ -99,7 +99,7 @@ class CrossProcessApprovalTests(LoopFixture):
         waiter.start()
         pending = wait_for(lambda: self.approvals.list_pending_requests(owner_id='10001'))
         self.assertTrue(pending)
-        self.assertIn(f'需要操作确认（{pending[0].req_id}）', self.titles())
+        self.assertTrue(wait_for(lambda: f'需要操作确认（{pending[0].req_id}）' in self.titles()))
         script = textwrap.dedent(f'''
             import sys; sys.path.insert(0, {str(ROOT)!r})
             from pathlib import Path

@@ -59,7 +59,7 @@ FORBIDDEN_PATTERNS = [
     ".npmrc", ".pypirc", ".netrc", ".git-credentials", "id_rsa", "id_ed25519",
     "*.pid",
     "*.class",
-    "*.exe", "*.bin", "*.gguf", "*.pt", "*.pth", "*.safetensors",
+    "*.exe", "*.apk", "*.bin", "*.gguf", "*.pt", "*.pth", "*.safetensors",
     "*.log", "*.zip", "*.zip.tmp", "*.sha256",
     "*.lnk", "collect*.txt", "collect-final.txt", ".pytest_*",
     # internal handoff/feasibility notes are not public documentation
@@ -88,7 +88,7 @@ FORBIDDEN_DIRS = [
     ".venv",
     "__pycache__",
     ".pytest_cache",
-    "build",
+    "build", "dist",
     "/data",  # private application data at the project root; Android's data package is source
     "friends",
     _vendor_runtime_dir(),

@@ -5,9 +5,9 @@ Explicit allow_remote=True or QQ_ALLOW_REMOTE=1 enables all IPv4 interfaces
 (0.0.0.0), including LAN/VPN. Every /api call requires the friend's bearer token;
 forwarding does not grant administrator access. Remote mode must be chosen locally.
 
-Tailscale Funnel is denied by default even when it reaches loopback. Set
-QQ_ALLOW_FUNNEL=1 only when you intentionally want a public endpoint. Prefer
-Tailscale Serve or a private tailnet over Funnel.
+Tailscale Funnel is denied by default even when it reaches loopback. The desktop
+pairing card explicitly enables it after verifying the matching forwarding rule;
+QQ_ALLOW_FUNNEL can also override the local setting.
 
 It runs in the panel's process, not the bridge's: the proactive preview closes the app-server it uses, which must
 not be the bridge's own (house_status.preview_proactive)."""
@@ -44,7 +44,10 @@ def funnel_request(headers) -> bool:
 
 def funnel_allowed() -> bool:
     import os
-    return os.environ.get('QQ_ALLOW_FUNNEL', '0') in ('1', 'true', 'True')
+    if 'QQ_ALLOW_FUNNEL' in os.environ:
+        return os.environ['QQ_ALLOW_FUNNEL'] in ('1', 'true', 'True')
+    import house_settings
+    return house_settings.load().get('tailscale_funnel_enabled') is True
 _bridge = {'at': 0.0, 'text': ''}
 _preview = threading.Lock()
 _token_lock = threading.Lock()
@@ -618,13 +621,16 @@ def model(qq, _query):
     api = profile.get('model_api') or {}
     named_connections, active_api_id = load_connections(profile)
     dsh_cfg = (api.get('dsh_settings') or {})
-    dsh_models = dsh_backend.fetch_available_models()
+    # This is a settings snapshot, not account discovery: an unrelated CLI must
+    # not block opening the page or spawn a process on every refresh.
+    dsh_model = dsh_cfg.get('model') or (api.get('model') if api.get('provider') == 'dsh' else '') or dsh_backend.DEFAULT_MODELS[0]
+    dsh_models = list(dict.fromkeys([dsh_model, *dsh_backend.DEFAULT_MODELS]))
     return {'provider': ('dsh' if api.get('provider') in ('dsh', 'deepseek_harness') else
                          'custom' if api.get('provider') in ('custom', 'deepseek') else
                          'antigravity' if api.get('provider') == 'antigravity' else
                          'claude' if api.get('provider') == 'claude' else 'codex'),
-            'dsh_model': api.get('model') if api.get('provider') == 'dsh' else dsh_cfg.get('model', 'deepseek-flash'),
-            'dsh_effort': api.get('api_effort') if api.get('provider') == 'dsh' else dsh_cfg.get('effort', 'low'),
+            'dsh_model': dsh_model,
+            'dsh_effort': dsh_cfg.get('effort') or (api.get('api_effort') if api.get('provider') == 'dsh' else '') or 'low',
             'antigravity_model': api.get('antigravity_model') or AG_MODELS[0],
             'antigravity_effort': api.get('antigravity_effort') or 'low',
             'codex_model': api.get('codex_model', 'gpt-6-luna'), 'codex_effort': api.get('codex_effort', 'low'),
@@ -642,13 +648,14 @@ def model(qq, _query):
             'options': {'codex': model_options(), 'antigravity_models': list(AG_MODELS),
                         'antigravity_efforts': list(AG_EFFORTS), 'claude_models': list(CLAUDE_MODELS),
                         'claude_efforts': list(CLAUDE_EFFORTS), 'protocols': list(PROTOCOLS), 'api_efforts': list(EFFORTS),
-                        'dsh_models': dsh_models, 'dsh_efforts': list(dsh_backend.EFFORTS),
+                        'dsh_models': dsh_models, 'dsh_models_source': 'saved_and_defaults',
+                        'dsh_efforts': list(dsh_backend.EFFORTS),
                         'compact_default': provider_context.info(api).window, 'base_url': DEFAULT_BASE_URL, 'api_model': MODELS[0]}}
 
 
 def post_model(qq, body):
     """The panel'sSavemodelSettingsandSavemodelSettings(ModelPage.save / save_research_model), without the key."""
-    from api_backend import key_path, settings as api_settings
+    from api_backend import key_path, settings as api_settings, EFFORTS as API_EFFORTS
     from api_profiles import load_connections, clean_connection
     from claude_backend import settings as claude_settings
     from antigravity_backend import settings as ag_settings
@@ -656,14 +663,18 @@ def post_model(qq, body):
     directory = _directory(qq)
     profile = load_profile(directory / 'friend.json')
     connections, active_api_id = load_connections(profile)
+    saved_api = profile.get('model_api') or {}
     provider = body.get('provider')
     if provider not in ('dsh', 'codex', 'custom', 'claude', 'antigravity'):
         raise ValueError('模型来源无效')
-    claude = {'claude_model': _text(body, 'claude_model'), 'claude_effort': _text(body, 'claude_effort')}
-    claude_settings(claude)
-    ag = {'antigravity_model': _text(body, 'antigravity_model'),
-          'antigravity_effort': _text(body, 'antigravity_effort')}
-    ag_settings(ag)
+    claude = {key: _text(body, key) if key in body else saved_api.get(key, '')
+              for key in ('claude_model', 'claude_effort')}
+    if provider == 'claude':
+        claude_settings(claude)
+    ag = {key: _text(body, key) if key in body else saved_api.get(key, '')
+          for key in ('antigravity_model', 'antigravity_effort')}
+    if provider == 'antigravity':
+        ag_settings(ag)
     custom = {'api_protocol': _text(body, 'api_protocol'), 'api_base_url': _text(body, 'api_base_url'),
               'model': _text(body, 'model'), 'api_effort': _text(body, 'api_effort')}
     compact = _text(body, 'compact_tokens')
@@ -691,16 +702,23 @@ def post_model(qq, body):
             raise ValueError('当前 API 连接尚未保存加密密钥，请在 Windows 电脑的桌面端配置。')
         connections[requested_id] = custom
         profile['api_profiles'] = connections
-    api = dict(profile.get('model_api') or {})
-    api.update(provider=provider, codex_model=_text(body, 'codex_model'), codex_effort=_text(body, 'codex_effort'),
-               codex_fast=body.get('codex_fast') is True)
-    generation_settings(api)
+    api = dict(saved_api)
+    api['provider'] = provider
+    for key in ('codex_model', 'codex_effort'):
+        if key in body:
+            api[key] = _text(body, key)
+    if 'codex_fast' in body:
+        api['codex_fast'] = body['codex_fast'] is True
+    if provider == 'codex':
+        generation_settings(api)
     if provider == 'custom':
         api.update(custom)
     elif provider == 'dsh':
-        dsh_model = _text(body, 'dsh_model') or 'deepseek-flash'
-        dsh_effort = _text(body, 'dsh_effort') or 'low'
-        api['dsh_settings'] = {'model': dsh_model, 'effort': dsh_effort}
+        config = dict(api.get('dsh_settings') or {})
+        dsh_model = _text(body, 'dsh_model') or config.get('model') or 'deepseek-flash'
+        dsh_effort = _text(body, 'dsh_effort') or config.get('effort') or 'low'
+        config.update(model=dsh_model, effort=dsh_effort)
+        api['dsh_settings'] = config
         api.update(model=dsh_model, api_effort=dsh_effort)
     api.update(claude)
     if provider == 'antigravity':
@@ -716,8 +734,14 @@ def post_model(qq, body):
             api['recent_chat_char_budget'] = int(recent_budget)
         else:
             api.pop('recent_chat_char_budget', None)
-    research = {'research_effort': _text(body, 'research_effort'), 'research_fast': body.get('research_fast') is True}
-    generation_settings({**api, 'codex_effort': research['research_effort'], 'codex_fast': research['research_fast']})
+    research = {'research_effort': (_text(body, 'research_effort') if 'research_effort' in body
+                                  else profile.get('research_effort', 'low')),
+                'research_fast': (body['research_fast'] is True if 'research_fast' in body
+                                  else profile.get('research_fast', True))}
+    if provider == 'codex' and 'research_effort' in body:
+        generation_settings({**api, 'codex_effort': research['research_effort'], 'codex_fast': research['research_fast']})
+    elif research['research_effort'] not in API_EFFORTS:
+        raise ValueError('话题整理思考强度无效')
     profile['model_api'] = api
     profile.update(research)
     write_profile(directory / 'friend.json', profile)
@@ -906,19 +930,7 @@ def agent_session(qq, query):
     ws_id = query.get('ws_id', ['default'])[0]
     sid = query.get('sid', ['session_main'])[0]
     if sid == '__qq_stream__':
-        store = FriendStore(_directory(qq))
-        try:
-            raw_msgs = store.recent_messages(50)
-        finally:
-            store.close()
-        msgs = [{
-            'id': f'qq_{i}',
-            'role': 'user' if m['direction'] == 'received' else 'assistant',
-            'content': m['body'],
-            'thinking': '',
-            'timestamp': m['created_at'],
-        } for i, m in enumerate(raw_msgs)]
-        return {'id': '__qq_stream__', 'title': 'QQ 实时联动通道', 'messages': msgs, 'is_qq': True}
+        return agent_service.qq_stream(qq)
     data = session_manager.load_session(qq, sid, ws_id)
     session_manager.set_active_session_id(qq, sid, ws_id)
     return data
@@ -1367,7 +1379,7 @@ class Handler(BaseHTTPRequestHandler):
         # distinguish it from a local browser. Refuse the whole public surface
         # unless the operator explicitly opted in.
         if funnel_request(self.headers) and not funnel_allowed():
-            return self._send(403, {'error': 'Tailscale Funnel 默认关闭；如确需公网访问，请显式设置 QQ_ALLOW_FUNNEL=1'})
+            return self._send(403, {'error': 'Tailscale Funnel 未启用；请在电脑的移动设备与网页访问中点击一键配置'})
         if method == 'GET' and url.path in ('/', '/index.html'):
             return self._send(200, PAGE.read_bytes(), 'text/html; charset=utf-8')
         if method == 'GET' and url.path == '/app-icon.png':
@@ -1473,7 +1485,8 @@ def start(allow_remote: bool | None = None):
     Loopback is always bound.  A detected Tailscale address is also bound by
     default so the phone/Tailscale entry appears automatically; set
     QQ_ALLOW_TAILSCALE=0 to keep the old local-only behavior.  LAN/Radmin/public
-    endpoints still require QQ_ALLOW_REMOTE=1.
+    endpoints still require QQ_ALLOW_REMOTE=1. Funnel only forwards loopback
+    and uses its separate explicit desktop setting.
     """
     if allow_remote is None:
         import os
@@ -1489,7 +1502,7 @@ def start(allow_remote: bool | None = None):
         'radmin': f'http://{radmin_ip}:{PORT}/' if radmin_ip else None,
         'lan': f'http://{lan_ip}:{PORT}/' if lan_ip else None,
         'tailnet': f'http://{address}:{PORT}/' if address else None,
-        'public': network.public_url(PORT) if allow_remote else None,
+        'public': network.public_url(PORT) if funnel_allowed() else None,
     }
 
     if allow_remote:

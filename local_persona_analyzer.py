@@ -59,16 +59,34 @@ def provider_kind(value):
 
 def model_name(value, friend_dir=None):
     if value == 'cloud':
-        api = json.loads((Path(friend_dir) / 'friend.json').read_text('utf-8')).get('model_api') or {}
-        provider = api.get('provider', 'codex')
-        key = {'codex': 'codex_model', 'claude': 'claude_model', 'antigravity': 'antigravity_model'}.get(provider, 'model')
-        return provider + ':' + str(api.get(key, 'default'))
+        from agent_model_selection import current
+        provider, profile = analysis_profile(friend_dir)
+        model, effort = current(profile, provider)
+        return provider + ' · ' + (model or '工具默认') + (' · ' + effort if effort else '')
     if value is True:
         try:
             return json.loads((RUNTIME / 'runtime.json').read_text('utf-8'))['model'].removesuffix('.gguf')
         except (OSError, ValueError, KeyError):
             return 'qwen2.5-local'
     return ''
+
+
+def analysis_profile(friend_dir):
+    from agent_model_selection import apply, provider_name
+    profile = json.loads((Path(friend_dir)/'friend.json').read_text('utf-8'))
+    api = profile.get('model_api') or {}
+    multi = api.get('multi_agent') or {}
+    provider = provider_name((multi.get('master') or api.get('master_provider') or api.get('provider'))
+                            if multi.get('enabled') or api.get('multi_agent_enabled') else api.get('provider') or 'codex')
+    if provider == 'multi_agent':
+        raise ValueError('协作配置尚未指定主智能体，未擅自选择分析模型')
+    actual = apply(profile, provider)
+    actual['computer_tools'] = {'enabled':False, 'commands':False}
+    if provider == 'dsh':
+        import dsh_backend
+        if dsh_backend.cli_path(api.get('dsh_path')):
+            raise ValueError('DSH 原生命令行不能保证无工具分析，请选择兼容 API 或其他支持纯文本的模型')
+    return provider, actual
 
 
 def missing_local_model():
@@ -112,12 +130,13 @@ def call_model(prompt, schema, model, friend_dir, max_tokens=1024):
     profile_path = directory / 'friend.json'
     profile = json.loads(profile_path.read_text('utf-8')) if profile_path.is_file() else {}
     if model == 'cloud':
-        import main
+        from multi_agent_orchestrator import call_single_agent
+        provider, profile = analysis_profile(directory)
         with tempfile.TemporaryDirectory(prefix='persona-cloud-', dir=directory) as temporary:
             schema_path = Path(temporary) / 'schema.json'
             schema_path.write_text(json.dumps(schema, ensure_ascii=False), encoding='utf-8')
-            text, _ = main.codex_text(prompt, directory, ephemeral=True, text_only=True,
-                                      output_schema=schema_path, profile=profile)
+            text, _ = call_single_agent(provider, prompt, directory, profile, ephemeral=True, text_only=True,
+                output_schema=schema_path, local_ok=False, raise_on_error=True, max_retries=0)
         return _strip_fence(text or '')
     from local_chat import thinking_options
     from message_classifier import GENERATION, get_classifier

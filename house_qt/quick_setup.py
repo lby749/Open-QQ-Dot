@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (QApplication, QDialog, QHBoxLayout, QScrollArea, 
 from qfluentwidgets import (BodyLabel, CaptionLabel, ComboBox, LineEdit, PrimaryPushButton,
                             PushButton, TitleLabel)
 
-from .common import Card, hint, toast
+from .common import Card, hint, toast, run_async, LONG_POOL
 
 PERSONAS = {
     "温柔陪伴": {
@@ -75,7 +75,7 @@ PERSONA_BUBBLES = {"温柔陪伴": 2, "活泼元气": 3, "冷静理性": 2, "毒
 
 
 PERFORMANCE = {
-    "极小": ("不下载任何本地辅助模型；先用已有模型/在线模型，之后可在模型页手动下载", []),
+    "极小": ("只自动准备小型 Q8 语音识别；其他本地辅助模型按需下载", []),
     "低占用": ("轻量向量 + 轻量重排 + MeloTTS 最小语音（约90MB，不下载本地大语言模型）",
               [("embedding", "small"), ("rerank", "small"), ("tts", "small")]),
     "中占用": ("中等向量 + 中等重排 + 轻量语音（不下载本地大语言模型）",
@@ -193,17 +193,6 @@ def detect_agents() -> list[dict]:
     return found
 
 
-def _models(agent: str, fallback: str) -> list[str]:
-    return {
-        "codex": ["gpt-6-luna", "gpt-6.1-sol", "gpt-5.6-luna"],
-        "dsh": ["DeepSeek-V41-Flash", "DeepSeek-V41", "DeepSeek-V3"],
-        "claude": ["claude-haiku-5-5", "claude-sonnet-5-5", "claude-opus-5-5"],
-        "antigravity": ["gemini-3.8-flash-low", "gemini-3.8-flash-medium", "gemini-3.8-flash-high"],
-        "zcode": ["GLM-5.3", "GLM-5.3-Flash", "GLM-5.2"],
-        "webchat_deepseek": ["DeepSeek Chat", "DeepSeek Reasoner"],
-    }.get(agent, [fallback])
-
-
 _PREPARED_PROMPTS = None
 
 
@@ -318,6 +307,7 @@ class QuickSetupDialog(QDialog):
             QComboBox::drop-down { border: none; width: 24px; }
         """)
         self.agents = detect_agents()
+        self.catalogs, self.fetch_token = {}, 0
 
         self.purpose = ComboBox()
         self.purpose.addItems(list(PURPOSES))
@@ -325,6 +315,12 @@ class QuickSetupDialog(QDialog):
         for item in self.agents:
             self.agent.addItem(item["label"], userData=item)
         self.model = ComboBox()
+        self.effort = ComboBox()
+        self.fetch_models_button = PushButton('提取可用模型与思考强度')
+        self.model_status = CaptionLabel('')
+        self.model_status.setWordWrap(True)
+        self.fetch_models_button.clicked.connect(self.fetch_models)
+        self.model.currentTextChanged.connect(self.refresh_efforts)
         self.performance = ComboBox()
         self.performance.addItems(list(PERFORMANCE))
         self.performance.setCurrentText("极小")
@@ -358,7 +354,6 @@ class QuickSetupDialog(QDialog):
         for field in (self.persona, self.relation, self.friend_gender, self.assistant_gender, self.frequency):
             field.currentTextChanged.connect(self.refresh_preview)
         self._load_existing()
-        self.refresh_models()
 
         self.step_label = CaptionLabel("第 1 步 / 共 3 步")
         self.step_label.setTextColor("#2563EB", "#60A5FA")
@@ -367,7 +362,10 @@ class QuickSetupDialog(QDialog):
             ("智能体名字", self.agent_name, "聊天窗口显示的名字；留空则使用接入智能体的名称。"),
             ("主要用途", self.purpose, "决定默认的主动频率和权限起点，之后仍可修改。"),
             ("接入智能体", self.agent, "检测只看默认路径和 Windows 已安装应用，不扫描磁盘。"),
-            ("默认模型", self.model, "同来源里优先低成本；需要更强模型可以稍后在设置里换。"),
+            ("默认模型", self.model, "提取前只保留配置值，不代表该账号实际可用。"),
+            ("思考强度", self.effort, "提取后只列出对应模型支持的档位。"),
+            ("模型目录", self.fetch_models_button, ""),
+            ("", self.model_status, ""),
             ("辅助模型", self.performance, "只影响向量、重排、语音模型；本地大语言模型不会自动下载。"),
         ]))
         self.preview = CaptionLabel("")
@@ -422,7 +420,7 @@ class QuickSetupDialog(QDialog):
         header = QHBoxLayout()
         header.addWidget(TitleLabel("先认识一下", self))
         header.addStretch(1)
-        header.addWidget(CaptionLabel("Open QQ Dot · 首次配置"))
+        header.addWidget(CaptionLabel("Open QQ Dot · 好友配置"))
         layout.addLayout(header)
         layout.addWidget(BodyLabel("三步完成，选项会变成这位好友自己的提示词；以后随时能改。"))
         layout.addWidget(self.pages, 1)
@@ -466,6 +464,49 @@ class QuickSetupDialog(QDialog):
             profile = load_profile(ROOT / "friends" / self.qq / "friend.json") or {}
         except Exception:
             profile = {}
+        # Restore the saved selections before applying reply-policy suggestions.
+        purpose = next((label for label, value in PURPOSES.items() if value == profile.get('purpose')), None)
+        if purpose:
+            self.purpose.setCurrentText(purpose)
+        if profile.get('performance_tier') in PERFORMANCE:
+            self.performance.setCurrentText(profile['performance_tier'])
+        parts = str((profile.get('prompt_presets') or {}).get('prepared_key') or '').split('_')
+        if len(parts) == 5:
+            for field, value in zip((self.persona, self.relation, self.friend_gender,
+                                      self.assistant_gender, self.frequency), parts):
+                if field is self.relation:
+                    value = next((label for label in RELATIONS if label.replace('/', '或') == value), value)
+                if field.findText(value) >= 0:
+                    field.setCurrentText(value)
+        basic = profile.get('basic_info') or {}
+        for field, key in ((self.friend_gender, 'friend_gender'), (self.assistant_gender, 'assistant_gender')):
+            if basic.get(key) and field.findText(basic[key]) >= 0:
+                field.setCurrentText(basic[key])
+        api = profile.get('model_api') or {}
+        provider = api.get('provider') or ''
+        from agent_model_selection import current
+        model, saved_effort = current(profile, provider) if provider else ('', '')
+        index = next((i for i, item in enumerate(self.agents) if item['id'] == provider), -1)
+        if provider and index < 0:
+            item = {'id': provider, 'label': f'已保存的接入：{provider}（未检测到程序）',
+                    'model': model, 'effort': 'low', 'rank': len(self.agents)}
+            self.agents.append(item)
+            self.agent.addItem(item['label'], userData=item)
+            index = len(self.agents) - 1
+        self.agent.blockSignals(True)
+        if index >= 0:
+            self.agent.setCurrentIndex(index)
+        self.agent.blockSignals(False)
+        self.refresh_models()
+        if model:
+            if self.model.findText(model) < 0:
+                self.model.addItem(model)
+            self.model.setCurrentText(model)
+        self.refresh_efforts(preferred=saved_effort or 'low')
+        tools = profile.get('computer_tools') or {}
+        level = ('chat' if not tools.get('enabled') else 'full' if tools.get('full_computer_access') else
+                 'read' if tools.get('mode') == 'read_only' else 'workspace')
+        self.permission.setCurrentText(next(label for label, value in PERMISSIONS.items() if value == level))
         self.agent_name.setText(str(profile.get('agent_name') or ''))
         try:
             bubbles = max(1, min(6, int(profile.get('reply_bubbles_max', 4) or 4)))
@@ -490,9 +531,61 @@ class QuickSetupDialog(QDialog):
         self.reply_bubbles.setCurrentIndex(max(0, min(len(REPLY_BUBBLES) - 1, bubbles - 1)))
 
     def refresh_models(self):
+        self.fetch_token += 1
         item = self.agent.currentData() or self.agents[0]
         self.model.clear()
-        self.model.addItems(_models(item["id"], item["model"]))
+        entry = self.catalogs.get(item['id'])
+        self.model.addItems(list(entry['models']) if entry else [item['model']])
+        self.fetch_models_button.setEnabled(True)
+        self.model_status.setText(entry['source'] if entry else '尚未提取；当前仅显示已配置或工具默认值，未验证调用。')
+        self.refresh_efforts()
+
+    def refresh_efforts(self, *_, preferred=None):
+        from .background_model_settings import EFFORT_LABELS
+        selected = preferred if preferred is not None else self.effort.currentData()
+        item = self.agent.currentData() or self.agents[0]
+        entry = self.catalogs.get(item['id'])
+        levels = entry['models'].get(self.model.currentText(), []) if entry else [selected or item.get('effort', 'low')]
+        self.effort.clear()
+        for level in levels or ['']:
+            self.effort.addItem(EFFORT_LABELS.get(level, level), userData=level)
+        index = self.effort.findData(selected)
+        self.effort.setCurrentIndex(max(0, index))
+
+    def fetch_models(self):
+        from house_status import ROOT, load_profile
+        from agent_model_selection import discover, signature
+        from shiboken6 import isValid
+        directory = ROOT / 'friends' / self.qq
+        profile = load_profile(directory / 'friend.json')
+        provider = self.agent.currentData()['id']
+        token = self.fetch_token = self.fetch_token + 1
+        self.fetch_models_button.setEnabled(False)
+        self.model_status.setText('正在提取当前工具的模型目录…')
+        def active():
+            return isValid(self) and self.fetch_token == token and self.agent.currentData()['id'] == provider
+        def failed(error):
+            if active():
+                from diagnostics import redact
+                self.fetch_models_button.setEnabled(True)
+                self.model_status.setText('提取未完成：' + redact(str(error))[:200])
+        def done(entry):
+            if not active():
+                return
+            try:
+                if signature(load_profile(directory / 'friend.json'), provider) != entry['signature']:
+                    raise ValueError('连接配置已变化，请重新提取')
+            except Exception as exc:
+                failed(exc)
+                return
+            model, effort = self.model.currentText(), self.effort.currentData()
+            self.catalogs[provider] = entry
+            self.refresh_models()
+            if model in entry['models']:
+                self.model.setCurrentText(model)
+            self.refresh_efforts(preferred=effort)
+            self.model_status.setText(entry['source'] + '；目录不代表额度或调用已经验收。')
+        run_async(lambda _: discover(profile, provider, directory), done, failed, pool=LONG_POOL)
 
     def _purpose_changed(self):
         if self.purpose.currentText() == "工作为主":
@@ -539,6 +632,7 @@ class QuickSetupDialog(QDialog):
         return {
             "purpose": self.purpose.currentText(), "agent": selected["id"],
             "model": self.model.currentText(), "persona": self.persona.currentText(),
+            "effort": self.effort.currentData() or '',
             "relation": self.relation.currentText(), "friend_gender": self.friend_gender.currentText(),
             "assistant_gender": self.assistant_gender.currentText(),
             "frequency": self.frequency.currentText(), "performance": self.performance.currentText(),
@@ -577,18 +671,28 @@ class QuickSetupDialog(QDialog):
             api["model"] = model
             if agent == "codex":
                 api["codex_model"] = model
-                api["codex_effort"] = "low"
+                api["codex_effort"] = choice['effort']
             elif agent == "claude":
                 api["claude_model"] = model
-                api["claude_effort"] = "low"
+                api["claude_effort"] = choice['effort']
             elif agent == "antigravity":
                 api["antigravity_model"] = model
-                api["antigravity_effort"] = "low"
+                api["antigravity_effort"] = choice['effort']
             elif agent == "dsh":
-                api["dsh_settings"] = {**(api.get("dsh_settings") or {}), "model": model, "effort": "low"}
-                api["api_effort"] = "low"
+                api["dsh_settings"] = {**(api.get("dsh_settings") or {}), "model": model, "effort": choice['effort']}
+                api["api_effort"] = choice['effort']
             elif agent.startswith("webchat_"):
                 api["context_tokens"] = 128_000
+                api.setdefault('webchat_models', {})[agent] = model
+                api.setdefault('webchat_efforts', {})[agent] = choice['effort']
+            elif agent == 'custom':
+                api['api_effort'] = choice['effort']
+            else:
+                from agent_tool_adapters import AGENT_BACKENDS
+                if agent in AGENT_BACKENDS:
+                    adapter = profile.setdefault('agent_adapters', {}).setdefault(agent, {})
+                    adapter['model'] = model
+                    adapter['variant' if agent == 'opencode' else 'effort'] = choice['effort']
             profile["model_api"] = api
             profile["purpose"] = PURPOSES[choice["purpose"]]
             profile["performance_tier"] = choice["performance"]

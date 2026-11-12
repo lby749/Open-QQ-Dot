@@ -312,7 +312,11 @@ class ModelDownloaderTests(unittest.TestCase):
 
         requests = []
 
-        def urlopen(req, timeout=30):
+        def urlopen(req, timeout=30, context=None):
+            import ssl
+            self.assertIsNotNone(context)
+            self.assertEqual(context.verify_mode, ssl.CERT_REQUIRED)
+            self.assertTrue(context.check_hostname)
             requests.append(req.get_header('Range'))
             return Response(b'01234', 10, 200) if len(requests) == 1 else Response(b'56789', 5, 206)
 

@@ -50,6 +50,7 @@ class TestDshBackend(unittest.TestCase):
                                                                    'full_computer_access': True}), \
                      patch('workspace_tools.workspace', return_value=folder), \
                      patch('api_backend.key_path', return_value=key), \
+                     patch('api_backend.load_key', return_value='local-test-key'), \
                      patch('api_backend.generate') as fallback, \
                      patch.object(dsh_backend, 'run_process') as native:
                     if isinstance(result, Exception):
@@ -77,6 +78,7 @@ class TestDshBackend(unittest.TestCase):
                                                                'full_computer_access': True}), \
                  patch('workspace_tools.workspace', return_value=folder), \
                  patch('api_backend.key_path', return_value=key), \
+                 patch('api_backend.load_key', return_value='local-test-key'), \
                  patch('api_backend.generate', return_value='api result') as fallback, \
                  patch.object(dsh_backend, 'run_process', return_value=SimpleNamespace(
                      returncode=1, stdout='', stderr='MISSING_CREDENTIAL')):
@@ -118,9 +120,11 @@ class TestDshBackend(unittest.TestCase):
         self.assertTrue(Path(cli).exists())
 
     def test_models_fetch(self):
-        models = dsh_backend.fetch_available_models()
+        from unittest.mock import patch
+        with patch.object(dsh_backend, 'fetch_model_catalog', return_value={'models': {'actual-installed-model': []}}):
+            models = dsh_backend.fetch_available_models()
         self.assertIsInstance(models, list)
-        self.assertIn('deepseek-chat', models)
+        self.assertEqual(models, ['actual-installed-model'])
 
     def test_credentials_loading(self):
         env = dsh_backend.load_credentials_env()

@@ -14,6 +14,8 @@ from PySide6.QtWidgets import QApplication
 import house_qt.common as common
 import house_qt.pages_friend as pages_friend
 import house_qt.pages_more as pages_more
+import house_qt.qq_connection as pages_connection
+import house_qt.dotlink as pages_dotlink
 import house_qt.window as window_module
 import house_status
 
@@ -33,8 +35,13 @@ class AgentGroupUiTests(unittest.TestCase):
         main.dump_json(self.root / 'friends.json', {'friends': {'12345': {
             'qq_id': '12345', 'display_name': 'testfriend', 'directory': str(self.directory), 'self_id': '77777'}}})
         FriendStore(self.directory).close()
-        for module in (house_status, window_module, pages_friend, pages_more):
+        for module in (house_status, window_module, pages_friend, pages_more, pages_connection, pages_dotlink):
             patch.object(module, 'ROOT', self.root).start()
+        patch.dict(os.environ, {'QQ_BRIDGE_HOME': str(self.root)}).start()
+        patch('agent_service.ROOT', self.root).start()
+        patch('session_manager.ROOT', self.root).start()
+        patch('qq_link.QQClient', side_effect=RuntimeError('UI tests do not connect to QQ')).start()
+        patch('house_qt.first_run.should_show', return_value=False).start()
         patch.object(house_status, 'REGISTRY', self.root / 'friends.json').start()
         patch.object(window_module, 'REGISTRY', self.root / 'friends.json').start()
         patch.object(window_module, 'invoke_bridge', return_value=(0, 'running PID 1')).start()
@@ -62,7 +69,9 @@ class AgentGroupUiTests(unittest.TestCase):
     def test_group_chat_and_network_are_sibling_tabs(self):
         collab = self.window.workspaces['collab']
         labels = [collab.tabs.tabText(i) for i in range(collab.tabs.count())]
-        self.assertEqual(labels, ['智能体与工具', '账号与路由', '协作网络', '协作流程', '群聊协作'])
+        self.assertEqual(labels, ['智能体与工具', '协作网络', '协作流程', '群聊协作'])
+        pending = self.window.workspaces['development'].tabs
+        self.assertEqual(pending.tabText(pending.count() - 1), '账号与路由')
         group = self.window.pages['collabPage']
         self.assertEqual(group.objectName(), 'agentGroupPage')
         group.refresh()

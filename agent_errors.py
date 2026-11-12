@@ -29,6 +29,7 @@ class AgentErrorType(str, enum.Enum):
     RATE_LIMIT = "RATE_LIMIT"
     QUOTA_EXHAUSTED = "QUOTA_EXHAUSTED"
     AUTH_ERROR = "AUTH_ERROR"
+    PERMISSION_DENIED = "PERMISSION_DENIED"
     NETWORK_ERROR = "NETWORK_ERROR"
     TIMEOUT = "TIMEOUT"
     POLICY_BLOCKED = "POLICY_BLOCKED"
@@ -81,6 +82,9 @@ def classify_error(
     """
     msg_parts = []
     p = provider.lower()
+    if isinstance(exc, PermissionError):
+        return AgentError(AgentErrorType.PERMISSION_DENIED, provider=p,
+                          message='没有所需权限，受限操作没有继续执行', retryable=False)
 
     # 1. Inspect HTTPError or status code
     if exc and isinstance(exc, urllib.error.HTTPError):

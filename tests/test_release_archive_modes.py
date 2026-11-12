@@ -33,3 +33,13 @@ def test_source_android_data_package_is_not_private_runtime_data(tmp_path):
     assert any('data/private.json' in error for error in errors)
     assert any('/target/' in error for error in errors)
     assert any('compiled cache' in error for error in errors)
+
+
+def test_generated_delivery_tree_and_compiled_apk_are_rejected(tmp_path):
+    archive = tmp_path/'generated.zip'
+    with zipfile.ZipFile(archive, 'w') as package:
+        for name in ('LICENSE', 'licenses/NapCat-LICENSE', 'dist/candidate/readme.md', 'mobile.apk'):
+            package.writestr('Open-QQ-Dot/'+name, 'synthetic fixture')
+    errors = check(archive, source=True)
+    assert any('/dist/' in error for error in errors)
+    assert any('compiled app' in error for error in errors)

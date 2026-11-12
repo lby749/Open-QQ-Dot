@@ -135,6 +135,25 @@ def local_ready(value: dict, root: Optional[Path] = None) -> bool:
     return is_installed('asr', value['tier'], root)
 
 
+def ensure_default(root=None, progress=None, cancel_event=None):
+    """Shared small recognizer; a valid installation is reused without a download."""
+    import importlib.util
+    from model_downloader import MODEL_CATALOG, project_root, is_installed, download_model
+    from source_state import source_lock
+    home = project_root(root)
+    if importlib.util.find_spec('sherpa_onnx') is None:
+        import local_runtimes
+        local_runtimes.install('asr', home, cancel_event=cancel_event)
+        importlib.invalidate_caches()
+        if importlib.util.find_spec('sherpa_onnx') is None:
+            raise RuntimeError('语音运行环境未就绪，请用安装器修复依赖后重启')
+    with source_lock(home / MODEL_CATALOG['asr']['small']['target_dir']):
+        reused = is_installed('asr', 'small', home)
+        if not reused:
+            download_model('asr','small',home,progress_callback=progress,cancel_event=cancel_event)
+        return {'ready':is_installed('asr','small',home),'reused':reused}
+
+
 def _recognizer(tier: str, root: Optional[Path] = None):
     import sherpa_onnx
     from model_downloader import MODEL_CATALOG, project_root
@@ -143,9 +162,13 @@ def _recognizer(tier: str, root: Optional[Path] = None):
     base = project_root(root) / cfg['target_dir']
     key = (str(base), cfg['model_file'])
     if _engine['key'] != key:
-        _engine['recognizer'] = sherpa_onnx.OfflineRecognizer.from_sense_voice(
-            model=_native_path(base / cfg['model_file']), tokens=_native_path(base / 'tokens.txt'),
-            num_threads=2, use_itn=True, language='auto')
+        if cfg.get('engine') == 'paraformer':
+            _engine['recognizer'] = sherpa_onnx.OfflineRecognizer.from_paraformer(
+                paraformer=_native_path(base / cfg['model_file']),tokens=_native_path(base/'tokens.txt'),num_threads=2)
+        else:
+            _engine['recognizer'] = sherpa_onnx.OfflineRecognizer.from_sense_voice(
+                model=_native_path(base / cfg['model_file']), tokens=_native_path(base / 'tokens.txt'),
+                num_threads=2, use_itn=True, language='auto')
         _engine['key'] = key
     return _engine['recognizer']
 

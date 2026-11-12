@@ -10,6 +10,19 @@ import windows_installer as installer
 from windows_installer import install_source
 
 
+def test_native_dependency_progress_is_localized_without_losing_progress():
+    events = []
+    progress = installer._StageProgress(events.append, (70, 88))
+    progress('Resolved 2 packages in 50ms')
+    progress('Downloaded torch (260MiB)')
+    progress('If this is intentional, set export UV_LINK_MODE=copy')
+    progress('Installed 2 packages in 1s')
+    assert events[0]['text'] == '已解析 2 项依赖'
+    assert events[1]['text'] == '已下载：torch (260MiB)'
+    assert 'export' not in events[2]['text']
+    assert events[-1] == {'percent': 88.0, 'text': '已安装 2 项依赖'}
+
+
 def package(folder, files):
     archive = Path(folder) / 'payload.zip'
     with zipfile.ZipFile(archive, 'w') as output:

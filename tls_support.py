@@ -12,6 +12,15 @@ import os
 from pathlib import Path
 
 
+def client_context():
+    """Retain OS/operator trust and add Mozilla public roots for standalone Python."""
+    import ssl
+    import certifi
+    context = ssl.create_default_context()
+    context.load_verify_locations(cafile=certifi.where())
+    return context
+
+
 def certificate_fingerprint(directory: Path) -> str:
     """Public SHA-256 of the DER certificate; never read or expose its private key."""
     import hashlib

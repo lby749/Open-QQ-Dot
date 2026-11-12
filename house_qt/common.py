@@ -4,7 +4,7 @@ from ui_locale import tr
 from concurrent.futures import ThreadPoolExecutor
 
 from PySide6.QtCore import QObject, QRectF, Qt, Signal
-from PySide6.QtGui import QColor, QPainter
+from PySide6.QtGui import QColor, QFontMetrics, QPainter
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QWidget
 from shiboken6 import isValid
 from qfluentwidgets import (BodyLabel, CaptionLabel, InfoBar, InfoBarPosition, LineEdit, MessageBox,
@@ -44,7 +44,10 @@ class SectionSwitcher(SegmentedWidget):
         item = super().addItem(routeKey, text, onClick, icon)
         if item is not None:
             item.setFixedHeight(36)
-            item.setMinimumWidth(self.fontMetrics().horizontalAdvance(text)+36)
+            item.ensurePolished()
+            font = item.font()
+            font.setBold(True)  # Selected labels are heavier than the container font.
+            item.setMinimumWidth(QFontMetrics(font).horizontalAdvance(text)+36)
             self.hBoxLayout.setStretchFactor(item, 0)
             self.setMaximumWidth(sum(w.minimumWidth() for w in self.items.values()) +
                                  4*max(0, len(self.items)-1)+8)

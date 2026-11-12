@@ -26,7 +26,7 @@ def make_app(tmp_path):
 
 def test_embedding_and_rerank_share_one_torch_runtime():
     assert lr.runtimes_for([("embedding", "small"), ("rerank", "base")]) == ["embedding"]
-    assert lr.runtimes_for([("tts", "small"), ("asr", "small"), ("llm", "base")]) == []
+    assert lr.runtimes_for([("tts", "small"), ("asr", "small"), ("llm", "base")]) == ['asr']
 
 
 def test_install_skips_when_imports_already_work(tmp_path, monkeypatch):

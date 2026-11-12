@@ -21,6 +21,18 @@ def _fixture(root: Path) -> None:
     (root / 'collect-final.txt').write_text('private collection\n', 'utf-8')
 
 
+def test_repeated_packaging_never_copies_generated_delivery_assets(tmp_path):
+    for name in ('app.py', 'dist/candidate/mobile.apk', 'dist/candidate/check.txt', 'old-mobile.apk'):
+        path = tmp_path/name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b'synthetic build artifact')
+    for app_only in (False, True):
+        output = tmp_path/f'result-{app_only}.zip'
+        package_release.create_clean_package(tmp_path, output, app_only=app_only)
+        with zipfile.ZipFile(output) as archive:
+            assert archive.namelist() == ['Open-QQ-Dot/app.py']
+
+
 def test_source_archive_contains_tests_tools_docs_and_build_docs(tmp_path):
     root = tmp_path / 'source'
     root.mkdir()

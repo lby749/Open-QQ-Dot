@@ -36,7 +36,7 @@ def _opencode_cli() -> str:
     return next((str(path) for path in candidates if path.is_file()), '')
 
 
-def opencode_discovery() -> tuple[str, str]:
+def opencode_discovery(*, start_service=False) -> tuple[str, str]:
     """(url, password) of the locally running OpenCode server; either may be ''.
 
     2026-10-26 user: "open code 接入失败". The installed desktop build (2.0.32) serves the v2 API on a port
@@ -51,6 +51,28 @@ def opencode_discovery() -> tuple[str, str]:
             done = subprocess.run([cli, 'service', 'status'], capture_output=True, text=True, timeout=6,
                                   creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
             lines = [line.strip() for line in (done.stdout or '').splitlines() if line.strip()]
+            if start_service and lines and lines[-1] == 'stopped':
+                started = subprocess.run([cli, 'service', 'start'], capture_output=True, text=True, timeout=20,
+                                         creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+                if started.returncode:
+                    raise AgentAdapterError('OpenCode 本机服务未能启动，请先打开 OpenCode 检查服务状态')
+                deadline = time.monotonic() + 10
+                while True:
+                    done = subprocess.run([cli, 'service', 'status'], capture_output=True, text=True, timeout=6,
+                                          creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+                    lines = [line.strip() for line in (done.stdout or '').splitlines() if line.strip()]
+                    candidate = next((line for line in reversed(lines) if line.startswith('http://')), '')
+                    if candidate:
+                        import socket
+                        port = urlsplit(_loopback_url(candidate)).port
+                        try:
+                            with socket.create_connection(('127.0.0.1', port), timeout=0.3):
+                                break
+                        except OSError:
+                            pass
+                    if time.monotonic() >= deadline:
+                        raise AgentAdapterError('OpenCode 服务启动后尚未就绪，请先在桌面端检查服务状态')
+                    time.sleep(0.3)
             url = next((line for line in reversed(lines) if line.startswith('http://')), '')
         except (OSError, subprocess.SubprocessError):
             url = ''
@@ -198,6 +220,11 @@ class LocalOpenCode:
 
     def list_models(self) -> list[dict]:
         """Models this account can use, each with its reasoning variants (the 'thinking effort' tiers)."""
+        if not self.url and not self._base:
+            url, password = opencode_discovery(start_service=True)
+            if url:
+                self._base = _loopback_url(url)
+                self._resolved_password = self._password or password
         self.info()
         if self.api != 2:
             raise AgentAdapterError('OpenCode v1 服务不提供模型清单；请使用 OpenCode 2 或更新版本')

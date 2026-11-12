@@ -153,7 +153,6 @@ class HouseWindow(FluentWindow):
                 ('任务胶囊', self.pages['capsulePage'])]),
             'agents': WorkspaceTabs(self, 'workspaceAgents', [
                 ('智能体与工具', self.pages['modelPage']),
-                ('账号与路由', AccountsVNextPage(self)),
                 ('协作网络', CollaborationPage(self)),
                 ('协作流程', CooperationFlowPage(self)),
                 ('群聊协作', AgentGroupPage(self))]),
@@ -167,26 +166,27 @@ class HouseWindow(FluentWindow):
                 ('经验库', ExperienceVNextPage(self))]),
             'development': WorkspaceTabs(self, 'workspaceDevelopment', [
                 ('待开发中功能', self.pages['developmentPage']),
-                ('健康数据试用', self.pages['healthPreviewPage'])]),
+                ('健康数据试用', self.pages['healthPreviewPage']),
+                ('账号与路由', AccountsVNextPage(self))]),
             'settings': WorkspaceTabs(self, 'workspaceSettings', [
-                ('人设与指令', self.pages['profilePage']),
+                ('人设与提示词', self.pages['profilePage']),
                 ('长期记忆', self.pages['memoryPage']),
                 ('迁移助手', self.pages['migrationPage']),
                 ('版本与更新', self.pages['softwareUpdatePage'])]),
         }
         # Legacy links keep the same live widgets; both top and left navigation share one workspace.
         self.workspaces['collab'] = self.workspaces['agents']
-        self.pages['cooperationFlowPage'] = self.workspaces['agents'].tabs.widget(3)
+        self.pages['cooperationFlowPage'] = self.workspaces['agents'].tabs.widget(2)
+        self.pages['accountsPreviewPage'] = self.workspaces['development'].tabs.widget(2)
         self._workspaces_for_page = {}
         for container in self.workspaces.values():
             for index in range(container.tabs.count()):
                 self._workspaces_for_page[container.tabs.widget(index)] = container
         self._sidebar_routes = {}
         direct = {
-            'agents': [('账号与路由', self.workspaces['agents'].tabs.widget(1)),
-                       ('协作网络', self.workspaces['agents'].tabs.widget(2)),
+            'agents': [('协作网络', self.workspaces['agents'].tabs.widget(1)),
                        ('协作流程', self.pages['cooperationFlowPage']),
-                       ('群聊协作', self.workspaces['agents'].tabs.widget(4))],
+                       ('群聊协作', self.workspaces['agents'].tabs.widget(3))],
             'tasks': [('自主规划与执行', self.pages['autonomyPage']),
                       ('长期任务与计划', self.pages['proactivePage']),
                       ('自主研究', self.pages['researchAgentPage']),
@@ -204,6 +204,7 @@ class HouseWindow(FluentWindow):
             ('tutorial', FluentIcon.HELP, '使用教程'),
             ('home', FluentIcon.HOME, '主页'),
             ('friends', FluentIcon.MESSAGE, '好友总览'),
+            ('settings', FluentIcon.APPLICATION, '设置与工具'),
             ('connection', FluentIcon.CONNECT, '连接与会话'),
             ('agents', FluentIcon.ROBOT, '智能体与工具'),
             ('tasks', FluentIcon.DEVELOPER_TOOLS, '任务中心'),
@@ -212,11 +213,10 @@ class HouseWindow(FluentWindow):
             ('qq', FluentIcon.MESSAGE, 'QQ 与会话'),
             ('insights', FluentIcon.HISTORY, '系统洞察'),
             ('development', FluentIcon.DEVELOPER_TOOLS, '待开发中功能'),
-            ('settings', FluentIcon.APPLICATION, '设置与工具'),
         ):
             if key == 'collab':
                 continue
-            position = NavigationItemPosition.BOTTOM if key in ('tutorial', 'settings') else NavigationItemPosition.SCROLL
+            position = NavigationItemPosition.BOTTOM if key in ('tutorial', 'development') else NavigationItemPosition.SCROLL
             self.addSubInterface(self.workspaces[key], icon, tr(title), position=position)
             self.navigationInterface.widget(self.workspaces[key].objectName()).setAccessibleName(tr(title))
             for index, (label, page) in enumerate(direct.get(key, [])):
@@ -232,7 +232,7 @@ class HouseWindow(FluentWindow):
         self.pages['tasksPage'] = self.workspaces['tasks']
         self.pages['capsulesPage'] = self.workspaces['capsules']
         self.pages['agentsPage'] = self.workspaces['agents']
-        self.pages['collabPage'] = self.workspaces['agents'].tabs.widget(4)
+        self.pages['collabPage'] = self.workspaces['agents'].tabs.widget(3)
         self.pages['qqPage'] = self.workspaces['qq']
         self.pages['insightsPage'] = self.workspaces['insights']
         self.pages['settingsPage'] = self.workspaces['settings']
@@ -643,6 +643,8 @@ class HouseWindow(FluentWindow):
         self.switchTo(target)
 
     def switchTo(self, interface):
+        if interface is self.workspaces.get('agents'):
+            interface.select_widget(self.pages['modelPage'])
         if interface is self.pages.get('dotlinkPage'):
             connection = self.pages['qqConnectionPage']
             connection.open_legacy()
@@ -984,8 +986,10 @@ def run(startup_error='', startup=None, open_paths=None):
         web = None
         startup_error = '\n'.join(filter(None, (startup_error, f'网页访问服务启动失败：{exc}')))
     window = HouseWindow(startup_error, web, startup, open_paths)
+    app.aboutToQuit.connect(window.pages['workbenchPage']._voice_cancel.set)
     fit_window(window)
     window.show()
+    QTimer.singleShot(1600,window.pages['workbenchPage'].prepare_voice)
     QTimer.singleShot(0, lambda: fit_window(window))
     return app.exec()
 

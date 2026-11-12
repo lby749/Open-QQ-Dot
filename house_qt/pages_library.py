@@ -21,11 +21,21 @@ from .common import GREEN, LONG_POOL, Card, Page, TextDialog, body, confirm, hin
 class TemplatePage(Page):
     def __init__(self, house):
         super().__init__(house, 'templatePage')
+        self.persona = PlainTextEdit()
+        self.persona.setMinimumHeight(160)
+        self.persona.setPlaceholderText('当前好友的身份、常驻指令和角色设定')
+        self.persona_owner = None
+        self.persona_saved = ''
+        save_persona = PrimaryPushButton('保存常驻指令')
+        save_persona.clicked.connect(self.save_persona)
+        reload_persona = PushButton('重新载入')
+        reload_persona.clicked.connect(self.reload_persona)
+        self.add(Card('常驻指令与角色', actions=(reload_persona, save_persona)).add(
+            hint('直接编辑当前好友原有的人设与常驻指令；回复方式和分类提示词仍在相邻页。'),self.persona))
         import_ = PrimaryPushButton(tr('Import Template Package'))
         import_.clicked.connect(self.import_package)
         self.mine = self.add(Card('My Persona Templates', actions=(import_,)).add(
-            hint('Template = Persona speaking style (summary, traits, habits) + Vector library (real response examples & tags). '
-                 'A template package is a .zip file. Once imported, it can be applied in "Instructions & Persona".')))
+            hint('显示当前好友的快速配置组合和已导入模板。快速配置关联内置合成示例；独立模板包可从聊天记录生成或导入。')))
 
         self.rows = []
 
@@ -73,7 +83,15 @@ class TemplatePage(Page):
         else:
             self.model.addItem(tr('Local LLM (Requires mounting in Engine page)'), userData=True)
 
-        self.model.addItem(tr('Cloud Model (Follow Current Friend)'), userData='cloud')
+        label = '当前好友的模型（智能体 / 接口）'
+        if self.house.current_qq:
+            try:
+                from local_persona_analyzer import model_name
+                label += ' · ' + model_name('cloud', self.house.friend_dir)
+            except Exception as exc:
+                from diagnostics import redact
+                label += ' · 不可用：' + redact(str(exc))[:120]
+        self.model.addItem(label, userData='cloud')
 
         idx = 0
         for i in range(self.model.count()):
@@ -84,22 +102,81 @@ class TemplatePage(Page):
         self.model.blockSignals(False)
 
     def load(self):
+        profile = load_profile(self.house.profile_path) if self.house.current_qq else {}
+        self.persona_saved = str(profile.get('persona') or '')
+        self.persona.setPlainText(self.persona_saved)
+        self.persona.document().setModified(False)
+        self.persona_owner = self.house.current_qq
         self.update_model_choices()
         self.refresh()
 
     def shown(self):
+        if self.persona_owner != self.house.current_qq:
+            self.load()
+            return
+        if not self.persona.document().isModified():
+            profile = load_profile(self.house.profile_path) if self.house.current_qq else {}
+            self.persona_saved = str(profile.get('persona') or '')
+            self.persona.setPlainText(self.persona_saved)
+            self.persona.document().setModified(False)
         self.update_model_choices()
         self.refresh()
 
+    def reload_persona(self):
+        if self.persona.document().isModified() and not confirm(self.house, '重新载入常驻指令',
+                '未保存的草稿将被已保存的指令替换。继续？', '重新载入'):
+            return
+        self.load()
+
+    def save_persona(self):
+        if not self.persona_owner or self.persona_owner != self.house.current_qq:
+            return toast(self.house,'warning','好友已变化，未保存旧好友的草稿，请重新打开此页。')
+        from house_status import write_profile
+        try:
+            profile = load_profile(self.house.profile_path)
+            if str(profile.get('persona') or '') != self.persona_saved:
+                return toast(self.house, 'warning', '其他入口已修改常驻指令，未覆盖。请保留草稿后点击「重新载入」。')
+            profile['persona'] = self.persona.toPlainText().strip()
+            write_profile(self.house.profile_path,profile)
+            self.persona_saved = profile['persona']
+            self.persona.document().setModified(False)
+            toast(self.house,'success','当前好友的常驻指令已保存。')
+        except Exception as exc:
+            toast(self.house,'error',str(exc),'保存常驻指令失败')
+
 
     def refresh(self):
-        from persona_template import library_size, list_templates
+        from persona_template import library_size, list_templates, active
         templates = list_templates()
         for item in self.rows:
             item.deleteLater()
         self.rows = []
+        if self.house.current_qq:
+            profile = load_profile(self.house.profile_path)
+            preset = profile.get('prompt_presets') or {}
+            key = preset.get('prepared_key') if isinstance(preset, dict) else ''
+            if key:
+                from quick_setup_examples import examples
+                samples = examples(profile)
+                other = active(profile) is not None or (self.house.profile_path.parent / 'public_examples.json').is_file()
+                state = ('示例已停用（身份或关系有修改）' if preset.get('examples_enabled') is False else
+                         '示例未找到，请重新快速配置' if not samples else
+                         '已关联；当前另选的模板或示例库优先' if other else
+                         '聊天回复可检索使用；不作为真实经历')
+                line = QWidget()
+                layout = QHBoxLayout(line)
+                layout.setContentsMargins(0, 0, 0, 0)
+                text = BodyLabel('快速配置 · ' + key.replace('_', ' · ') +
+                                 f'\n配套合成示例：{len(samples)} 条 · ' + state)
+                text.setWordWrap(True)
+                layout.addWidget(text, 1)
+                edit = PushButton('编辑人设与提示词')
+                edit.clicked.connect(lambda: self.house.switchTo(self.house.pages['stylePage']))
+                layout.addWidget(edit)
+                self.mine.add(line)
+                self.rows.append(line)
         if not templates:
-            self.rows.append(hint('No templates yet: import a template package or generate from chat history below.'))
+            self.rows.append(hint('尚未导入独立模板包；可导入，或从下方聊天记录生成。'))
             self.mine.add(self.rows[-1])
         for template in templates:
             source, size = template['source'], library_size(template['id'])
@@ -186,15 +263,27 @@ class TemplatePage(Page):
             model = ('cloud' if self.model.currentText().startswith('Cloud') else
                      False if self.model.currentText().startswith('Statistical') else True)
         directory = self.house.friend_dir
-
-
+        owner = self.house.current_qq
+        token = self.build_token = getattr(self, 'build_token', 0) + 1
+        def current():
+            from shiboken6 import isValid
+            return isValid(self) and self.house.current_qq == owner and self.build_token == token
         def done(templates):
+            if not current():
+                return
             self.drafts = templates
             self.show_preview(templates)
             self.status.setText(f'已生成 {len(templates)} 个草稿，保存后即可应用到好友。')
-        self.status.setText('Generating...')
+        def progress(text):
+            if current():
+                self.status.setText(text)
+        def failed(exc):
+            if current():
+                from diagnostics import redact
+                self.status.setText('生成未完成：' + redact(str(exc))[:300])
+        self.status.setText('正在生成…')
         run_async(lambda progress: [build_template(path, uin, model, directory, progress=progress) for uin in chosen],
-                  done, lambda exc: self.status.setText('Failed: ' + str(exc)), self.status.setText, pool=LONG_POOL)
+                  done, failed, progress, pool=LONG_POOL)
 
     def show_preview(self, templates):
         from persona_template import style_text
@@ -202,9 +291,9 @@ class TemplatePage(Page):
         for template in templates:
             source = template['source']
             lines += [f"■ {template['name']} ({source['speaker']}, {source['messages']} 条消息，"
-                      f"{source['pairs']} 组问答，分析模型：{template['model']})", 'Summary: ' + template['summary'], 'Traits:']
-            lines += [f"  · {item['trait']} (Quote: {' / '.join(item['evidence'])})" for item in template['traits']]
-            lines += ['Speaking Habits: ' + style_text(template['style']), f"回复示例：{len(template['examples'])}", '']
+                      f"{source['pairs']} 组问答，分析模型：{template['model']})", '摘要：' + template['summary'], '特点：']
+            lines += [f"  · {item['trait']}（原话：{' / '.join(item['evidence'])}）" for item in template['traits']]
+            lines += ['说话习惯：' + style_text(template['style']), f"回复示例：{len(template['examples'])}", '']
         self.preview.setPlainText('\n'.join(lines))
 
     def confirm_drafts(self):

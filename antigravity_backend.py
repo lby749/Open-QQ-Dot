@@ -30,12 +30,22 @@ MODELS = (
 EFFORTS = ('low', 'medium', 'high', 'xhigh', 'max')
 
 
+def model_efforts(model):
+    suffix = str(model).rsplit('-', 1)[-1]
+    return [suffix] if suffix in ('low', 'medium', 'high') else []
+
+
 def fetch_available_models(custom_path: str | None = None) -> list[tuple[str, str]]:
     """Fetch live available models from `agy models` CLI. Returns list of (model_id, label)."""
     cli = cli_path(custom_path)
     if not cli:
-        raise RuntimeError("not found Antigravity CLI (agy) . confirmmedium agy.exe")
-    res = subprocess.run([cli, 'models'], capture_output=True, text=True, timeout=15,
+        raise RuntimeError('未找到 Antigravity CLI，请配置 agy 程序路径')
+    env = dict(os.environ)
+    home = ROOT / 'data' / 'antigravity-home'
+    if home.is_dir():
+        env.update(HOME=str(home), USERPROFILE=str(home))
+    res = subprocess.run([cli, 'models'], capture_output=True, text=True, encoding='utf-8', errors='replace',
+                         timeout=30, env=env,
                          creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
     if res.returncode != 0:
         raise RuntimeError(f"从 Antigravity CLI 读取模型失败：{res.stderr.strip() or res.stdout.strip() or '执行异常'}")

@@ -10,6 +10,28 @@ import packaged_bridge
 
 
 class PackagedBridgeTests(unittest.TestCase):
+    def test_bootstrap_parent_exit_recovers_its_running_bridge_child(self):
+        with tempfile.TemporaryDirectory() as folder:
+            home = Path(folder)
+            (home / 'bridge.err.log').write_text('', 'utf-8')
+            started = False
+            child = SimpleNamespace(pid=321, is_running=lambda: True,
+                cmdline=lambda: ['python.exe', str(home / 'launcher.py'), '--bridge-run'],
+                exe=lambda: 'C:/Python312/python.exe')
+            def launch(*args, **kwargs):
+                nonlocal started
+                started = True
+                return SimpleNamespace(pid=123, poll=lambda: 0)
+            with patch.object(packaged_bridge, 'ROOT', home), \
+                    patch.object(packaged_bridge, 'PID_FILE', home / 'bridge.pid'), \
+                    patch.object(packaged_bridge, 'ERROR_FILE', home / 'bridge.err.log'), \
+                    patch.object(packaged_bridge.psutil, 'Process', side_effect=packaged_bridge.psutil.NoSuchProcess(123)), \
+                    patch.object(packaged_bridge.psutil, 'process_iter', side_effect=lambda *args: [child] if started else []), \
+                    patch.object(packaged_bridge.subprocess, 'Popen', side_effect=launch), \
+                    patch.object(packaged_bridge.time, 'sleep'):
+                self.assertIn('321', packaged_bridge.start())
+                self.assertEqual((home / 'bridge.pid').read_text(), '321')
+
     def test_missing_pid_recovers_bridge_from_another_python_entrypoint(self):
         with tempfile.TemporaryDirectory() as folder:
             home = Path(folder)

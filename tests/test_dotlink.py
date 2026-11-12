@@ -210,3 +210,58 @@ def test_existing_runtime_can_be_adopted_without_download(tmp_path, monkeypatch)
     meta = json.loads((home / "dotlink" / "runtime-source.json").read_text("utf-8"))
     assert meta["adopted"] is True and meta["copied"] is False
     assert not (target / "NAPCAT-LICENSE.txt").exists()
+
+
+def test_adoption_uses_canonical_source_and_replaces_a_dangling_link(tmp_path):
+    import os
+    import subprocess
+    source, alias, stale, home = (tmp_path/name for name in ('vendor', 'alias', 'stale', 'home'))
+    source.mkdir()
+    (source/'node.exe').write_bytes(b'synthetic runtime')
+    (source/'index.js').write_text('// synthetic runtime', encoding='utf-8')
+    stale.mkdir()
+    home.mkdir()
+    def link(target, destination):
+        if os.name == 'nt':
+            subprocess.run(['cmd', '/c', 'mklink', '/J', str(destination), str(target)], check=True, capture_output=True)
+        else:
+            destination.symlink_to(target, target_is_directory=True)
+    link(source, alias)
+    link(stale, home/'qq-runtime')
+    stale.rmdir()
+    result = dn.adopt_runtime(home, alias)
+    metadata = json.loads((home/'dotlink/runtime-source.json').read_text('utf-8'))
+    assert metadata['source'] == str(source.resolve())
+    assert result.resolve() == source.resolve()
+    assert (source/'node.exe').read_bytes() == b'synthetic runtime'
+
+
+def test_startup_reuses_saved_account_without_requesting_a_new_login(tmp_path, monkeypatch):
+    monkeypatch.setattr(dn, 'prepare', lambda _: {})
+    monkeypatch.setattr(dn, 'port_open', lambda _: False)
+    monkeypatch.setattr(dn, '_settings', lambda _: {'last_account': '123456'})
+    starts = []
+    monkeypatch.setattr(dn, 'start', lambda paths, **kwargs: starts.append(kwargs))
+    assert dn.ensure_started(tmp_path) == ''
+    assert starts == [{'account': '123456', 'wait': True}]
+
+
+def test_start_reuses_bundled_vc_runtime_only_in_child(tmp_path, monkeypatch):
+    import os
+    from types import SimpleNamespace
+    runtime = write_runtime(tmp_path)
+    qt = tmp_path / 'PySide6'
+    qt.mkdir()
+    (qt / 'vcruntime140.dll').write_bytes(b'fixture runtime')
+    monkeypatch.setattr(dn.importlib.util, 'find_spec', lambda name: SimpleNamespace(origin=str(qt / '__init__.py')))
+    monkeypatch.setattr(dn, 'ascii_root', lambda _: str(tmp_path))
+    monkeypatch.setattr(dn, 'discover_port', lambda _: 0)
+    original = os.environ.get('PATH', '')
+    calls = []
+    def spawn(*args, **kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(pid=12345)
+    monkeypatch.setattr(dn.subprocess, 'Popen', spawn)
+    dn.start(tmp_path, wait=False)
+    assert calls[-1]['env']['PATH'].split(os.pathsep)[0] == str(qt)
+    assert os.environ.get('PATH', '') == original

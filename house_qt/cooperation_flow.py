@@ -135,6 +135,7 @@ class CooperationFlowPage(QWidget):
         self.role.setPlaceholderText('这名智能体具体负责什么')
         self.parent, self.effort, self.entry = ComboBox(), ComboBox(), ComboBox()
         self.report = ComboBox()
+        self.bot_account = ComboBox()
         for value, label in [('auto', '自动选择'), ('group', '在群内汇报'), ('private', '私聊主账号'), ('mailbox', '智能体邮箱')]:
             self.report.addItem(label, userData=value)
         for value, label in EFFORTS.items():
@@ -145,6 +146,9 @@ class CooperationFlowPage(QWidget):
         for label, widget in [('名称', self.name), ('入口类型', self.entry), ('智能体工具', self.provider), ('上级节点', self.parent),
                               ('职责', self.role), ('模型', self.model), ('思考强度', self.effort), ('汇报通道', self.report)]:
             form.addRow(BodyLabel(label), widget)
+        form.addRow(BodyLabel('QQ 机器人账号'), self.bot_account)
+        self.qq_destination = hint('')
+        form.addRow(self.qq_destination)
         self.fetch_button = PushButton('提取可用模型与思考强度')
         self.fetch_button.clicked.connect(self.fetch_models)
         form.addRow(self.fetch_button)
@@ -269,13 +273,32 @@ class CooperationFlowPage(QWidget):
         self.provider.blockSignals(False)
         self.populate_models(node.get('model', ''), node.get('effort', ''))
         self.report.setCurrentIndex(max(0, self.report.findData(node.get('report', 'group'))))
+        group_entry = room.get('entry_kind', 'group' if room.get('qq_group', {}).get('enabled') else 'workbench') == 'group'
+        binding = room.get('qq_group') or {}
+        setup = room.get('qq_group_setup') or {}
+        self.bot_account.clear()
+        self.bot_account.addItem('请选择官方机器人账号', userData='')
+        if group_entry:
+            import qq_official
+            for bot in qq_official.bots(self.storage().parent):
+                if bot.get('enabled', True):
+                    self.bot_account.addItem(f"{bot['name']} · {bot['app_id']}", userData=bot['app_id'])
+            assigned = (setup.get('bots') or {}).get(node_id) or ((binding.get('bots') or {}).get(node_id) or {}).get('app_id', '')
+            self.bot_account.setCurrentIndex(max(0, self.bot_account.findData(assigned)))
+            main = setup.get('self_id') or binding.get('self_id') or '未绑定'
+            group = setup.get('group_id') or binding.get('group_id') or '未绑定'
+            count = len(agent_group.active_bot_members(room))
+            state = '已接入' if binding.get('enabled') else '尚未完成接入，不会向群内发送'
+            self.qq_destination.setText(f'主 QQ：{main} · 目标群：{group}\n已启用机器人 {count}/5；主账号另计。{state}')
+        self.form.setRowVisible(self.bot_account, group_entry and bool(node_id) and node_id != room.get('host_id'))
+        self.form.setRowVisible(self.qq_destination, group_entry)
         for widget in (self.provider, self.parent, self.role, self.model, self.effort, self.fetch_button):
             self.form.setRowVisible(widget, bool(node_id))
         self.form.setRowVisible(self.entry, not node_id)
         self.form.setRowVisible(self.report, bool(node_id) and node_id != room.get('host_id') and
                                 room.get('entry_kind', 'group' if room.get('qq_group', {}).get('enabled') else 'workbench') == 'group')
         self.parent.setEnabled(node_id != room.get('host_id'))
-        self.connect_button.setVisible(not node_id and self.entry.currentData() == 'group')
+        self.connect_button.setVisible(group_entry)
         profile = load_profile(self.storage().parent / 'friends' / self.owner() / 'friend.json')
         state = agent_group.node_states(room, profile).get(node_id, (room.get('enabled', True), ''))
         if state[1]:
@@ -305,11 +328,16 @@ class CooperationFlowPage(QWidget):
                     raise ValueError('请先提取当前智能体的可用模型和思考强度')
                 if self.model.currentData() is None or (self.model.currentData() and self.model.currentData() not in entry['models']):
                     raise ValueError('所选模型不在这次提取的目录中')
+                extra = {}
+                if room_id in self.rooms and self.rooms[room_id].get('entry_kind') == 'group' and node_id != self.rooms[room_id].get('host_id'):
+                    if not self.bot_account.currentData():
+                        raise ValueError('请选择该节点使用的官方机器人账号，并在 QQ 群接入中完成连接')
+                    extra['qq_bot_app_id'] = self.bot_account.currentData()
                 agent_group.update_node(self.storage(), self.owner(), room_id, node_id,
                     name=self.name.text().strip(), role=self.role.text().strip(), provider=provider, model=self.model.currentData() or '',
                     effort=self.effort.currentData(), enabled=self.enabled.isChecked(), parent_id=self.parent.currentData(),
                     report=self.report.currentData(),
-                    needs_discovery=False, model_catalog={provider_name(provider): entry})
+                    needs_discovery=False, model_catalog={provider_name(provider): entry}, **extra)
             else:
                 agent_group.update_room(self.storage(), self.owner(), room_id, title=self.name.text().strip(),
                     enabled=self.enabled.isChecked(), entry_kind=self.entry.currentData(), flow_version=1)
@@ -410,8 +438,10 @@ class CooperationFlowPage(QWidget):
                 self.populate_models(node.get('model', ''), node.get('effort', ''))
         def failed(exc):
             if self.fetch_token == token and self.owner() == owner:
+                from diagnostics import redact
                 self.fetch_button.setEnabled(True)
-                self.availability.setText('未能提取模型；未使用预置列表。' + (str(exc) if isinstance(exc, PermissionError) else type(exc).__name__))
+                if self.selection == selection and self.provider.currentData() == provider:
+                    self.availability.setText('未能提取模型：' + redact(str(exc))[:300])
         run_async(lambda _: discover(profile, provider, directory), done, failed, pool=LONG_POOL)
 
     def add_node(self):

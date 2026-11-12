@@ -5,7 +5,8 @@ Open QQ Dot 是本地运行的 Windows 桌面程序。源码使用 GPL-3.0-or-la
 ## 环境要求
 
 - Windows 10/11 64 位
-- Python 3.11–3.12（默认使用 3.12；AMD DirectML 需要 3.11/3.12）
+- 安装器用户无需预装 Python 或项目依赖；安装器准备独立运行环境。
+- 源码运行推荐 Python 3.12；AMD DirectML 需要 3.11/3.12。
 - 可选：Chrome（网页端模型）
 - 可选：Tailscale（手机远程配对）
 - 可选：NVIDIA 显卡（本地语音克隆）
@@ -35,7 +36,9 @@ python launcher.py
 pip install -r requirements-browser-optional.txt
 ```
 
-需要本地检索/语音模型时，在设置页选择下载，或安装：
+默认小型 Q8 语音识别在首次启动后自动下载，模型文件共约 82 MB，安装包不包含权重；已下载且校验有效的文件会复用。控制台点一下「语音」开始录音，按钮变为停止图标；再点一下结束录音并转写，只填入输入框，不自动发送。切换好友、会话或离开页面会取消当前录音；单次最长 60 秒。在「智能体与工具 → 本地模型与语音 → 收到 QQ 语音时」可调整识别方式、模型，并一键下载或修复。可选大语音模型、向量模型及其他辅助模型按需下载。
+
+需要更多本地检索模型时，在设置页选择下载，或安装：
 
 ```powershell
 pip install -r requirements-local-models.txt
@@ -45,8 +48,10 @@ pip install -r requirements-local-models.txt
 
 1. 打开「QQ 直连」登录 QQ。
 2. 添加第一位好友，完成三步快速配置。
-3. 在好友状态页生成手机配对二维码。
-4. 手机和电脑加入同一 Tailscale 网络后扫码。
+3. 在「连接与会话 → 移动设备与网页访问」查看当前好友的配对二维码。
+4. 异地连接可点「一键打开并配置 Funnel」。电脑缺少 Tailscale 时自动下载并校验安装包；首次 Tailscale 登录和账户授权需要用户完成，不改变 QQ 登录。公网 HTTPS 验证通过后才切换二维码；手机无需安装 Tailscale。已有私有 Tailscale 网络入口仍可使用。
+
+配对链接包含当前好友的访问令牌，请勿公开。公网连接的验证边界和关闭方式见 [Tailscale Funnel 说明](docs/Tailscale_Funnel安全.md)。
 
 ## 数据位置
 

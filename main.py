@@ -2773,6 +2773,19 @@ class Bridge:
         except Exception as exc:
             state = store.reply_attempt(message_id)['state']
             if not sent and state == 'processing':
+                from provider_permissions import permission_denied, denied_reply
+                if permission_denied(exc):
+                    from quota_reply import send_notice
+                    try:
+                        key = 'permission_reply_notice:' + __import__('hashlib').sha256(str(message_id).encode()).hexdigest()[:24]
+                        if send_notice(self, record, load_profile(record), store, message_id, snapshot,
+                                       text=denied_reply(load_profile(record)), key=key):
+                            self.log('已明确回复当前好友：没有所需权限', qq_id)
+                            return
+                    except Exception as notice_error:
+                        self.log('权限提示未确认发送：' + type(notice_error).__name__, qq_id)
+                    state = store.reply_attempt(message_id)['state']
+            if not sent and state == 'processing':
                 from quota_reply import exhausted, send_notice
                 if exhausted(exc):
                     store.set('bridge_error', str(exc)[:200])

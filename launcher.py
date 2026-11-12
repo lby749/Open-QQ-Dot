@@ -104,7 +104,9 @@ def main():
     from packaged_bridge import start, stop
 
     def start_all():
-        from house_settings import personal_qq_enabled
+        from house_settings import personal_qq_enabled, load
+        if load(home).get('cloud_only_mode'):
+            return '本地连接已停用，当前使用云端运行模式。'
         from app_lifecycle import start_background_services
         from qq_official import start_configured
         start_background_services()

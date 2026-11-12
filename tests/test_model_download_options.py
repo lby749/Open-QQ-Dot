@@ -6,10 +6,10 @@ from house_qt.quick_setup import PERFORMANCE
 
 
 class ModelTierTests(unittest.TestCase):
-    def test_minimal_tier_is_first_and_downloads_nothing(self):
+    def test_minimal_tier_does_not_queue_auxiliary_models_besides_default_small_voice(self):
         self.assertEqual(next(iter(PERFORMANCE)), '极小')
         self.assertEqual(PERFORMANCE['极小'][1], [])
-        self.assertIn('不下载', PERFORMANCE['极小'][0])
+        self.assertIn('只自动准备小型 Q8 语音识别', PERFORMANCE['极小'][0])
 
 
 try:

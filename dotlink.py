@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -124,13 +125,14 @@ def find_existing_runtimes(home: Path) -> list[Path]:
 def adopt_runtime(home: Path, source: Path) -> Path:
     """Use an existing immutable NapCat tree without copying or editing it."""
     home = Path(home)
-    source = Path(source)
+    # An adopted runtime must survive removal of a temporary SUBST drive or source junction.
+    source = Path(source).resolve()
     if not _runtime_ready(source):
         raise DotLinkError("已有 NapCat 目录不完整（缺少 index.js 或 node.exe）")
     target = home / "qq-runtime"
     if not _runtime_ready(target):
         try:
-            if target.exists():
+            if os.path.lexists(target):
                 target.rmdir()
             target.parent.mkdir(parents=True, exist_ok=True)
             if os.name == "nt":
@@ -642,12 +644,18 @@ def ascii_root(home: Path) -> Path:
         return home
     key = str(home).casefold()
     if key in _SUBST_CACHE:
-        return Path(_SUBST_CACHE[key])
+        cached = Path(_SUBST_CACHE[key])
+        try:
+            if cached.is_dir() and os.path.samefile(cached, home):
+                return cached
+        except OSError:
+            pass
+        _SUBST_CACHE.pop(key, None)
     text = str(home)
     if all(ord(char) < 128 for char in text) and " " not in text:
         _SUBST_CACHE[key] = text
         return home
-    for letter in "NOPQRSTUVWXYZ":
+    for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
         drive = Path(letter + ":/")
         try:
             if drive.is_dir() and os.path.samefile(drive, home):
@@ -742,6 +750,13 @@ def start(paths: Paths | Path, *, account: str = "", wait: bool = True) -> dict:
     mapped_runtime = Path(mapped) / "qq-runtime"
     chosen_runtime = mapped_runtime if runtime_ready(Paths(Path(mapped))) else paths.runtime
     env = dict(os.environ)
+    # Fresh Windows has no system VC++ runtime. Reuse the DLLs already installed
+    # with our Qt dependency, scoped to this child (not the user's global PATH).
+    qt = importlib.util.find_spec('PySide6')
+    if qt and qt.origin:
+        dlls = Path(qt.origin).parent
+        if (dlls / 'vcruntime140.dll').is_file():
+            env['PATH'] = str(dlls) + os.pathsep + env.get('PATH', '')
     env[vendor.get("workdir_env", "DOTLINK_WORKDIR")] = str(Path(mapped) / "dotlink" / "state")
     env[vendor.get("data_dir_env", "DOTLINK_DATA_DIR")] = str(Path(mapped) / "dotlink" / "qq-data")
     env[vendor.get("pipe_env", "DOTLINK_DISABLE_PIPE")] = "1"
@@ -854,6 +869,12 @@ def ensure_started(paths: Paths | Path, *, account: str = "") -> str:
         prepare(paths)
         if port_open(ONEBOT_PORT):
             return ""
+        if not account:
+            account = str(_settings(paths).get('last_account') or '')
+            if not account:
+                accounts = _known_accounts(paths)
+                if len(accounts) == 1:
+                    account = accounts[0]
         start(paths, account=account, wait=True)
         return ""
     except Exception as exc:
@@ -932,6 +953,10 @@ def state(paths: Paths | Path, *, include_logs: bool = True) -> dict:
         result["onebot_listening"] = port_open(ONEBOT_PORT)
         if result["login"]["is_login"]:
             result["qr"] = {}
+            settings = _settings(paths)
+            if info.get('uin') and settings.get('last_account') != str(info['uin']):
+                settings['last_account'] = str(info['uin'])
+                _save_settings(paths, settings)
         else:
             url = result["login"].get("qr_url") or ""
             if url:

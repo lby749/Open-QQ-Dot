@@ -139,7 +139,7 @@ def wants_voice(profile: dict, text: str, rng=random.random, force: bool = False
 
 
 def _native_path(path: Path) -> str:
-    """sherpa-onnx opens files through narrow-char APIs; give Windows an ASCII short path when needed."""
+    """Prefer an available short path; current sherpa-onnx also accepts the original Unicode path."""
     text = str(path)
     if os.name != 'nt' or text.isascii():
         return text
@@ -147,7 +147,7 @@ def _native_path(path: Path) -> str:
     buffer = ctypes.create_unicode_buffer(32768)
     if ctypes.windll.kernel32.GetShortPathNameW(text, buffer, len(buffer)) and buffer.value.isascii():
         return buffer.value
-    raise RuntimeError('语音模型路径含非 ASCII 字符且系统未提供短路径，请把程序放在英文路径下')
+    return text
 
 
 def model_dir(tier: str, root: Optional[Path] = None) -> Path:

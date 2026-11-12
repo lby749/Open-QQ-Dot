@@ -8,6 +8,8 @@ The blue Android companion in `android/` includes the Android Remote Control MCP
 
 ## UI and Runtime Dependencies
 
+- **certifi**: Mozilla public CA bundle, MPL-2.0; [upstream source](https://github.com/certifi/python-certifi). Download clients retain system trust and certificate/hostname verification; the upstream license remains in the installed package metadata. No private host certificates are redistributed.
+
 - **uv**:
   - Bundled in the Windows launcher and installer to create or repair a Python environment. Dual licensed under MIT OR Apache-2.0; copies are in `licenses/third-party/uv-LICENSE-MIT` and `licenses/third-party/uv-LICENSE-APACHE`, and embedded with each EXE.
   - Upstream source: <https://github.com/astral-sh/uv>. Existing Python environments and the user-selected uv cache are reused. Model weights are downloaded separately on demand.
@@ -39,6 +41,7 @@ The blue Android companion in `android/` includes the Android Remote Control MCP
 
 ## Optional Local Voice Models (QQ voice replies)
 
+- **Paraformer Chinese-small Q8 (`csukuangfj/sherpa-onnx-paraformer-zh-small-2024-03-09`)**: optional first-use ASR download, pinned to revision `63ddc3cd0f2810b68289a7b3876e62ef5d53d6df`. The [upstream model card](https://huggingface.co/csukuangfj/sherpa-onnx-paraformer-zh-small-2024-03-09/blob/63ddc3cd0f2810b68289a7b3876e62ef5d53d6df/README.md) identifies its ModelScope origin. Model use remains subject to its upstream terms; weights are excluded from the source and installer packages. The application's license does not relicense this model.
 - **sherpa-onnx (1.13.8)** and **ONNX (1.23.1)**: Apache License 2.0; [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx), [ONNX](https://github.com/onnx/onnx). Installed from `requirements-voice.txt`.
 - **MeloTTS Chinese–English (`csukuangfj/vits-melo-tts-zh_en`)**: MIT License (MeloTTS); the `LICENSE` file is downloaded with the model. Stored locally with FP16 weights.
 - **Kokoro-82M v1.1-zh (`csukuangfj/kokoro-multi-lang-v1_1`)**: Apache License 2.0; [upstream model card](https://huggingface.co/hexgrad/Kokoro-82M-v1.1-zh). The `LICENSE` file is downloaded with the model. Stored locally with FP16 weights.
@@ -46,3 +49,7 @@ The blue Android companion in `android/` includes the Android Remote Control MCP
 - **VoxCPM2 (`openbmb/VoxCPM2`)** and the **voxcpm** package (2.0.3): Apache License 2.0; [upstream model card](https://huggingface.co/openbmb/VoxCPM2). Runs in a separate, user-provided Python environment (`requirements-voice-clone.txt`). Voice cloning must only be used with voices the operator has the right to use.
 
 Local model weights and Python environments are excluded from the clean source package. Redistributing weights requires retaining their upstream license and attribution notices; the application's GPL-3.0-or-later license does not replace model licenses.
+
+## Optional Tailscale client
+
+- **Tailscale 1.104.6**: [BSD 3-Clause upstream source license](https://github.com/tailscale/tailscale/blob/v1.104.6/LICENSE), Copyright (c) 2020 Tailscale Inc & contributors. The optional connection action downloads a SHA-256-verified official MSI from `pkgs.tailscale.com`, or reuses an installed client. Tailscale software, account state and installer cache are not bundled into the clean project source package. The hosted service and its account authorization remain governed by Tailscale's terms.
