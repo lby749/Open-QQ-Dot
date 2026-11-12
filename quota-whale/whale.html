@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+/* Layout adapted from MeteorNOX/DeepSeek-Balance-Whale-Widget (MIT) whale-widget.js for display purposes only */
+html,body{margin:0;width:100%;height:100%;background:transparent;overflow:hidden;font-family:"Segoe UI",sans-serif}
+.dshwv-root{position:fixed;left:0;top:0;width:100vw;height:100vh;pointer-events:none;user-select:none;-webkit-user-select:none}
+.dshwv-pop{position:absolute;left:0;top:0;width:100%;aspect-ratio:1026/700;pointer-events:none;--dshw-u:calc(100vw / 1026)}
+.dshwv-pop svg{display:block;width:100%;height:100%}
+.dshwv-img{position:absolute;right:0;bottom:0;width:59.45%;height:59.45%;display:flex;align-items:center;justify-content:flex-end;font-family:"Segoe UI Emoji",sans-serif;font-size:calc(var(--dshw-u) * 390);line-height:1}
+.dshwv-text{position:absolute;left:44.25%;top:32%;width:66%;height:64%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#536ba9;line-height:1.15;white-space:nowrap}
+.dshwv-label{font-size:calc(var(--dshw-u) * 66);font-weight:600;letter-spacing:.06em}
+.dshwv-amount{font-size:calc(var(--dshw-u) * 128);font-weight:800;line-height:1.05}
+.dshwv-hint{font-size:calc(var(--dshw-u) * 56);color:#9fb0d9;letter-spacing:.02em;margin-top:calc(var(--dshw-u) * 9);line-height:1.15}
+</style>
+</head>
+<body>
+<div class="dshwv-root">
+  <div class="dshwv-pop">
+    <svg viewBox="0 0 1026 700" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#FFFFFF" stroke="#203170" stroke-width="18" stroke-linejoin="round" stroke-linecap="round" d="M 827 248 A 373 232 0 1 0 81 246 A 373 232 0 0 0 301 465 A 57 32 10 0 0 413 484 A 373 232 0 0 0 827 248 Z"/>
+      <ellipse cx="352" cy="561" rx="37.5" ry="26" fill="#FFFFFF" stroke="#203170" stroke-width="18"/>
+      <ellipse cx="442" cy="646" rx="24.5" ry="18" fill="#FFFFFF" stroke="#203170" stroke-width="18"/>
+    </svg>
+  </div>
+  <div class="dshwv-img" aria-hidden="true">🐳</div>
+  <div class="dshwv-text">
+    <div class="dshwv-label" id="label"></div>
+    <div class="dshwv-amount" id="amount">--</div>
+    <div class="dshwv-hint" id="hint"></div>
+  </div>
+</div>
+<script>
+// Invoked from quota_whale.py via runJavaScript
+function setQuota(label, amount, hint) {
+  document.getElementById('label').textContent = label;
+  document.getElementById('amount').textContent = amount;
+  document.getElementById('hint').textContent = hint;
+}
+</script>
+</body>
+</html>

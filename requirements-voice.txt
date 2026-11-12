@@ -1,0 +1,11 @@
+# Optional local voice replies (QQ record messages), light and medium tiers; CPU only, no PyTorch needed.
+# Models are downloaded from the desktop model page ("语音模型") into data/tts_models and stored as FP16;
+# onnx is used once at install time for that conversion.
+--index-url https://pypi.org/simple
+sherpa-onnx==1.13.8
+sherpa-onnx-core==1.13.8
+onnx==1.23.1
+protobuf==7.36.1
+ml_dtypes==0.6.0
+numpy==2.2.6
+typing_extensions==4.16.0

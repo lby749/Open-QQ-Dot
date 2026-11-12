@@ -1,0 +1,1497 @@
+{
+ "label": "after1",
+ "mode": "real",
+ "time": "2026-10-26 09:20:16",
+ "modules": {
+  "memory": {
+   "queries": 42,
+   "positives": 30,
+   "negatives": 12,
+   "recall": 0.4167,
+   "ndcg": 0.3551,
+   "mrr": 0.3722,
+   "precision": 0.1444,
+   "empty_on_positive": 0,
+   "noise_rate": 1,
+   "duplicates": 0,
+   "leaks": 0,
+   "returned_avg": 3,
+   "p50_ms": 57.5,
+   "p95_ms": 76.4,
+   "cold_ms": 73.8,
+   "embed_calls": 35,
+   "embed_texts": 35,
+   "rerank_calls": 35,
+   "rerank_pairs": 420,
+   "api_embed_calls": 0,
+   "api_rerank_calls": 0,
+   "gpu_peak_mb": 2192.7,
+   "context_chars": 1691,
+   "per_query": [
+    {
+     "query": "团子今天又把沙发抓烂了",
+     "returned": [
+      "M03",
+      "M30",
+      "M36"
+     ],
+     "gold": {
+      "M01": 2,
+      "M02": 1
+     }
+    },
+    {
+     "query": "猫做完手术恢复得怎么样了呀",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {
+      "M02": 2,
+      "M01": 1
+     }
+    },
+    {
+     "query": "今天地铁好挤，迟到了",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {
+      "M04": 2
+     }
+    },
+    {
+     "query": "给你带了芒果蛋糕要不要",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {
+      "M05": 2
+     }
+    },
+    {
+     "query": "下午要不要一起喝杯咖啡",
+     "returned": [
+      "M45",
+      "M03",
+      "M30"
+     ],
+     "gold": {
+      "M06": 2,
+      "M45": 2,
+      "M14": 1
+     }
+    },
+    {
+     "query": "这周末还去跑步吗",
+     "returned": [
+      "M07",
+      "M03",
+      "M30"
+     ],
+     "gold": {
+      "M07": 2
+     }
+    },
+    {
+     "query": "日语复习得怎么样了",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {
+      "M08": 2
+     }
+    },
+    {
+     "query": "你妈妈的礼物买好了吗",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {
+      "M09": 2
+     }
+    },
+    {
+     "query": "那部剧大结局了你看了吗",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {
+      "M10": 2
+     }
+    },
+    {
+     "query": "你弟弟最近考试怎么样",
+     "returned": [
+      "M12",
+      "M03",
+      "M30"
+     ],
+     "gold": {
+      "M12": 2
+     }
+    },
+    {
+     "query": "外面下大雨了",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {
+      "M13": 2
+     }
+    },
+    {
+     "query": "昨晚又熬夜了吧",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {
+      "M14": 2
+     }
+    },
+    {
+     "query": "胡桃复刻了，你抽了吗",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {
+      "M15": 2
+     }
+    },
+    {
+     "query": "电脑选好了吗，剪视频卡不卡",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {
+      "M16": 2
+     }
+    },
+    {
+     "query": "小林最近还好吗",
+     "returned": [
+      "M17",
+      "M03",
+      "M30"
+     ],
+     "gold": {
+      "M17": 2
+     }
+    },
+    {
+     "query": "国庆的行程定了吗",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {
+      "M23": 2
+     }
+    },
+    {
+     "query": "晚上吃火锅记得别放香菜",
+     "returned": [
+      "M24",
+      "M03",
+      "M30"
+     ],
+     "gold": {
+      "M24": 2,
+      "M23": 1,
+      "M43": 1
+     }
+    },
+    {
+     "query": "周杰伦要开演唱会了",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {
+      "M25": 2
+     }
+    },
+    {
+     "query": "今天又加班到十点",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {
+      "M26": 2
+     }
+    },
+    {
+     "query": "考研的事准备得如何",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {
+      "M27": 2
+     }
+    },
+    {
+     "query": "羽毛球打得怎么样",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {
+      "M29": 2
+     }
+    },
+    {
+     "query": "过年回老家吗",
+     "returned": [
+      "M31",
+      "M03",
+      "M30"
+     ],
+     "gold": {
+      "M31": 2
+     }
+    },
+    {
+     "query": "最近学会做什么菜了",
+     "returned": [
+      "M32",
+      "M03",
+      "M30"
+     ],
+     "gold": {
+      "M32": 2
+     }
+    },
+    {
+     "query": "东野圭吾出新书了",
+     "returned": [
+      "M03",
+      "M33",
+      "M30"
+     ],
+     "gold": {
+      "M33": 2
+     }
+    },
+    {
+     "query": "楼下有只大狗",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {
+      "M34": 2
+     }
+    },
+    {
+     "query": "牙齿复查怎么样",
+     "returned": [
+      "M22",
+      "M03",
+      "M30"
+     ],
+     "gold": {
+      "M22": 2
+     }
+    },
+    {
+     "query": "你在杭州上班累吗",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {
+      "M03": 2,
+      "M26": 1
+     }
+    },
+    {
+     "query": "any plans for the National Day holiday?",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {
+      "M23": 2
+     }
+    },
+    {
+     "query": "how's your Japanese exam prep going",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {
+      "M08": 2
+     }
+    },
+    {
+     "query": "did you buy the new laptop for video editing",
+     "returned": [
+      "M16",
+      "M03",
+      "M30"
+     ],
+     "gold": {
+      "M16": 2
+     }
+    },
+    {
+     "query": "面试结果出来了吗",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {}
+    },
+    {
+     "query": "搬家累不累",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {}
+    },
+    {
+     "query": "哈哈哈哈",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {}
+    },
+    {
+     "query": "好的",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {}
+    },
+    {
+     "query": "你吃饭了吗",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {}
+    },
+    {
+     "query": "晚安",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {}
+    },
+    {
+     "query": "这个表情包好好笑",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {}
+    },
+    {
+     "query": "你觉得量子计算以后会普及吗",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {}
+    },
+    {
+     "query": "嗯嗯",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {}
+    },
+    {
+     "query": "在吗",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {}
+    },
+    {
+     "query": "OK",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {}
+    },
+    {
+     "query": "我刚到家",
+     "returned": [
+      "M03",
+      "M30",
+      "M15"
+     ],
+     "gold": {}
+    }
+   ],
+   "index_build_ms": 9734.3
+  },
+  "topics": {
+   "queries": 20,
+   "positives": 13,
+   "negatives": 7,
+   "recall": 1.0,
+   "ndcg": 0.9733,
+   "mrr": 1.0,
+   "precision": 1.0,
+   "empty_on_positive": 0,
+   "noise_rate": 0,
+   "duplicates": 0,
+   "leaks": 0,
+   "returned_avg": 0.75,
+   "p50_ms": 56.5,
+   "p95_ms": 69.9,
+   "cold_ms": 58.3,
+   "embed_calls": 14,
+   "embed_texts": 14,
+   "rerank_calls": 16,
+   "rerank_pairs": 192,
+   "api_embed_calls": 0,
+   "api_rerank_calls": 0,
+   "gpu_peak_mb": 2200.5,
+   "context_chars": 555,
+   "per_query": [
+    {
+     "query": "胡桃复刻了",
+     "returned": [
+      "T01"
+     ],
+     "gold": {
+      "T01": 2
+     }
+    },
+    {
+     "query": "想去听周杰伦演唱会",
+     "returned": [
+      "T03"
+     ],
+     "gold": {
+      "T03": 2
+     }
+    },
+    {
+     "query": "N2听力好难啊",
+     "returned": [
+      "T04"
+     ],
+     "gold": {
+      "T04": 2,
+      "T05": 1
+     }
+    },
+    {
+     "query": "日语考试什么时候报名",
+     "returned": [
+      "T05"
+     ],
+     "gold": {
+      "T05": 2
+     }
+    },
+    {
+     "query": "半马要怎么练",
+     "returned": [
+      "T06"
+     ],
+     "gold": {
+      "T06": 2,
+      "T07": 1
+     }
+    },
+    {
+     "query": "剪视频买什么电脑好",
+     "returned": [
+      "T08",
+      "T09"
+     ],
+     "gold": {
+      "T08": 2,
+      "T09": 1
+     }
+    },
+    {
+     "query": "东野圭吾出新书了",
+     "returned": [
+      "T10"
+     ],
+     "gold": {
+      "T10": 2
+     }
+    },
+    {
+     "query": "国庆去成都玩",
+     "returned": [
+      "T14",
+      "T15"
+     ],
+     "gold": {
+      "T14": 2,
+      "T15": 1
+     }
+    },
+    {
+     "query": "猫绝育后要注意什么",
+     "returned": [
+      "T16"
+     ],
+     "gold": {
+      "T16": 2
+     }
+    },
+    {
+     "query": "学吉他扫弦好难",
+     "returned": [
+      "T18"
+     ],
+     "gold": {
+      "T18": 2
+     }
+    },
+    {
+     "query": "想考浙大软工",
+     "returned": [
+      "T13"
+     ],
+     "gold": {
+      "T13": 2
+     }
+    },
+    {
+     "query": "多肉要怎么浇水",
+     "returned": [
+      "T23"
+     ],
+     "gold": {
+      "T23": 2
+     }
+    },
+    {
+     "query": "下午喝冰美式会失眠吗",
+     "returned": [
+      "T19"
+     ],
+     "gold": {
+      "T19": 2
+     }
+    },
+    {
+     "query": "梅雨季好烦",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "好的",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "晚安",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "在吗",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "哈哈哈",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "今天吃什么",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "你觉得量子计算以后会普及吗",
+     "returned": [],
+     "gold": {}
+    }
+   ],
+   "index_build_ms": 138.4
+  },
+  "experiences": {
+   "queries": 20,
+   "positives": 15,
+   "negatives": 5,
+   "recall": 0.9333,
+   "ndcg": 0.9217,
+   "mrr": 0.9333,
+   "precision": 0.9286,
+   "empty_on_positive": 1,
+   "noise_rate": 0,
+   "duplicates": 0,
+   "leaks": 0,
+   "returned_avg": 0.85,
+   "p50_ms": 42.6,
+   "p95_ms": 53.0,
+   "cold_ms": 45.8,
+   "embed_calls": 18,
+   "embed_texts": 18,
+   "rerank_calls": 18,
+   "rerank_pairs": 180,
+   "api_embed_calls": 0,
+   "api_rerank_calls": 0,
+   "gpu_peak_mb": 2198.8,
+   "context_chars": 1246,
+   "per_query": [
+    {
+     "query": "pytest 找不到模块 ModuleNotFoundError",
+     "returned": [
+      "E01",
+      "E11"
+     ],
+     "gold": {
+      "E01": 2
+     }
+    },
+    {
+     "query": "subprocess 路径有空格就出错",
+     "returned": [
+      "E02"
+     ],
+     "gold": {
+      "E02": 2
+     }
+    },
+    {
+     "query": "database is locked 怎么办",
+     "returned": [
+      "E31"
+     ],
+     "gold": {
+      "E03": 2
+     }
+    },
+    {
+     "query": "git push 被拒绝了",
+     "returned": [
+      "E04",
+      "E23"
+     ],
+     "gold": {
+      "E04": 2
+     }
+    },
+    {
+     "query": "显存不够，加载模型失败",
+     "returned": [],
+     "gold": {
+      "E05": 2
+     }
+    },
+    {
+     "query": "打印中文是乱码",
+     "returned": [
+      "E07"
+     ],
+     "gold": {
+      "E07": 2
+     }
+    },
+    {
+     "query": "截图里的中文变成了方块",
+     "returned": [
+      "E08",
+      "E22"
+     ],
+     "gold": {
+      "E08": 2,
+      "E22": 1
+     }
+    },
+    {
+     "query": "接口一直返回429",
+     "returned": [
+      "E10"
+     ],
+     "gold": {
+      "E10": 2
+     }
+    },
+    {
+     "query": "模型返回的json带```解析失败",
+     "returned": [
+      "E11"
+     ],
+     "gold": {
+      "E11": 2
+     }
+    },
+    {
+     "query": "下载模型总是超时",
+     "returned": [
+      "E13"
+     ],
+     "gold": {
+      "E13": 2
+     }
+    },
+    {
+     "query": "音频转成16k单声道",
+     "returned": [
+      "E16"
+     ],
+     "gold": {
+      "E16": 2
+     }
+    },
+    {
+     "query": "torch 和 cuda 版本对不上",
+     "returned": [
+      "E21"
+     ],
+     "gold": {
+      "E21": 2
+     }
+    },
+    {
+     "query": "正则匹配不到汉字",
+     "returned": [
+      "E25"
+     ],
+     "gold": {
+      "E25": 2
+     }
+    },
+    {
+     "query": "csv第一列的列名前面多了奇怪字符",
+     "returned": [
+      "E29"
+     ],
+     "gold": {
+      "E29": 2
+     }
+    },
+    {
+     "query": "docker 镜像太大了",
+     "returned": [
+      "E34"
+     ],
+     "gold": {
+      "E34": 2,
+      "E09": 1
+     }
+    },
+    {
+     "query": "certificate verify failed SSL error",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "Nightjar cluster deploy token",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "帮我写一首关于秋天的诗",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "今天星期几",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "hello",
+     "returned": [],
+     "gold": {}
+    }
+   ],
+   "index_build_ms": 831.5
+  },
+  "capabilities": {
+   "queries": 20,
+   "positives": 20,
+   "negatives": 0,
+   "recall": 0.975,
+   "ndcg": 0.9361,
+   "mrr": 0.975,
+   "precision": 0.6625,
+   "empty_on_positive": 0,
+   "noise_rate": null,
+   "duplicates": 0,
+   "leaks": 0,
+   "returned_avg": 2.2,
+   "p50_ms": 40.9,
+   "p95_ms": 44.4,
+   "cold_ms": 142.8,
+   "embed_calls": 19,
+   "embed_texts": 19,
+   "rerank_calls": 19,
+   "rerank_pairs": 228,
+   "api_embed_calls": 0,
+   "api_rerank_calls": 0,
+   "gpu_peak_mb": 2198.6,
+   "context_chars": 2554,
+   "per_query": [
+    {
+     "query": "把这个PDF里的表格提取出来",
+     "returned": [
+      "C01",
+      "C35",
+      "C36",
+      "C03"
+     ],
+     "gold": {
+      "C01": 2
+     }
+    },
+    {
+     "query": "帮我做一份季度汇报PPT",
+     "returned": [
+      "C27",
+      "C04"
+     ],
+     "gold": {
+      "C04": 2
+     }
+    },
+    {
+     "query": "查一下最新的显卡价格",
+     "returned": [
+      "C05",
+      "C11",
+      "C27"
+     ],
+     "gold": {
+      "C05": 2,
+      "C06": 1
+     }
+    },
+    {
+     "query": "把这段录音转成文字",
+     "returned": [
+      "C15",
+      "C23",
+      "C14"
+     ],
+     "gold": {
+      "C15": 2
+     }
+    },
+    {
+     "query": "把这段话读出来",
+     "returned": [
+      "C14"
+     ],
+     "gold": {
+      "C14": 2
+     }
+    },
+    {
+     "query": "找几篇关于RAG的论文",
+     "returned": [
+      "C20",
+      "C10",
+      "C27"
+     ],
+     "gold": {
+      "C20": 2
+     }
+    },
+    {
+     "query": "提交代码并开一个PR",
+     "returned": [
+      "C10",
+      "C09"
+     ],
+     "gold": {
+      "C09": 2,
+      "C10": 2
+     }
+    },
+    {
+     "query": "查询订单数据库里上个月的数据",
+     "returned": [
+      "C11"
+     ],
+     "gold": {
+      "C11": 2,
+      "C12": 2
+     }
+    },
+    {
+     "query": "把这个视频转成mp3",
+     "returned": [
+      "C23"
+     ],
+     "gold": {
+      "C23": 2
+     }
+    },
+    {
+     "query": "识别截图里的文字",
+     "returned": [
+      "C24",
+      "C15",
+      "C22",
+      "C13"
+     ],
+     "gold": {
+      "C24": 2
+     }
+    },
+    {
+     "query": "明天杭州会下雨吗",
+     "returned": [
+      "C25"
+     ],
+     "gold": {
+      "C25": 2
+     }
+    },
+    {
+     "query": "给客户发一封邮件",
+     "returned": [
+      "C18",
+      "C28"
+     ],
+     "gold": {
+      "C18": 2
+     }
+    },
+    {
+     "query": "画一张销售趋势折线图",
+     "returned": [
+      "C36"
+     ],
+     "gold": {
+      "C36": 2,
+      "C03": 1
+     }
+    },
+    {
+     "query": "编译我的论文 tex 文件",
+     "returned": [
+      "C35",
+      "C16",
+      "C02",
+      "C14"
+     ],
+     "gold": {
+      "C35": 2
+     }
+    },
+    {
+     "query": "在Jira上建一个bug单",
+     "returned": [
+      "C33"
+     ],
+     "gold": {
+      "C33": 2
+     }
+    },
+    {
+     "query": "把这份报告翻译成英文",
+     "returned": [
+      "C16"
+     ],
+     "gold": {
+      "C16": 2
+     }
+    },
+    {
+     "query": "Translate this document into Japanese",
+     "returned": [
+      "C16"
+     ],
+     "gold": {
+      "C16": 2
+     }
+    },
+    {
+     "query": "Create a budget spreadsheet with formulas",
+     "returned": [
+      "C03",
+      "C02",
+      "C21",
+      "C04"
+     ],
+     "gold": {
+      "C03": 2
+     }
+    },
+    {
+     "query": "deploy the container to the k8s cluster",
+     "returned": [
+      "C31"
+     ],
+     "gold": {
+      "C31": 2,
+      "C30": 1
+     }
+    },
+    {
+     "query": "search the codebase for TODO comments",
+     "returned": [
+      "C29",
+      "C21",
+      "C20",
+      "C05"
+     ],
+     "gold": {
+      "C29": 2
+     }
+    }
+   ]
+  },
+  "dedup": {
+   "tp": 9,
+   "fp": 0,
+   "fn": 0,
+   "tn": 7,
+   "wrong_task": 0,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0,
+   "p50_ms": 34.2,
+   "p95_ms": 42.5,
+   "cold_ms": 78.7,
+   "embed_calls": 16,
+   "embed_texts": 16,
+   "rerank_calls": 11,
+   "rerank_pairs": 13,
+   "gpu_peak_mb": 2185.0,
+   "per_query": [
+    {
+     "query": "为calc.py写pytest单元测试",
+     "found": "D02",
+     "expected": "D02"
+    },
+    {
+     "query": "请把项目README翻成英语",
+     "found": "D03",
+     "expected": "D03"
+    },
+    {
+     "query": "爬一下豆瓣Top250电影",
+     "found": "D04",
+     "expected": "D04"
+    },
+    {
+     "query": "登录页面打开是白屏",
+     "found": "D05",
+     "expected": "D05"
+    },
+    {
+     "query": "每天整理arXiv上RAG相关新论文",
+     "found": "D06",
+     "expected": "D06"
+    },
+    {
+     "query": "每天凌晨自动备份sqlite数据库",
+     "found": "D07",
+     "expected": "D07"
+    },
+    {
+     "query": "首页太慢了",
+     "found": "D08",
+     "expected": "D08"
+    },
+    {
+     "query": "整理一下这周的会议纪要",
+     "found": "D01",
+     "expected": "D01"
+    },
+    {
+     "query": "为calc.py写使用说明",
+     "found": "D11",
+     "expected": "D11"
+    },
+    {
+     "query": "为utils.py写pytest单元测试",
+     "found": null,
+     "expected": null
+    },
+    {
+     "query": "把README翻译成法语",
+     "found": null,
+     "expected": null
+    },
+    {
+     "query": "爬取豆瓣读书Top250",
+     "found": null,
+     "expected": null
+    },
+    {
+     "query": "修复注册页白屏",
+     "found": null,
+     "expected": null
+    },
+    {
+     "query": "每天汇总arXiv上关于扩散模型的新论文",
+     "found": null,
+     "expected": null
+    },
+    {
+     "query": "备份PostgreSQL数据库",
+     "found": null,
+     "expected": null
+    },
+    {
+     "query": "写一篇关于图数据库的博客",
+     "found": null,
+     "expected": null
+    }
+   ]
+  },
+  "history": {
+   "queries": 8,
+   "positives": 6,
+   "negatives": 2,
+   "recall": 1.0,
+   "ndcg": 0.971,
+   "mrr": 1.0,
+   "precision": 1.0,
+   "empty_on_positive": 0,
+   "noise_rate": 0,
+   "duplicates": 0,
+   "leaks": 0,
+   "returned_avg": 0.88,
+   "p50_ms": 37.5,
+   "p95_ms": 40.8,
+   "cold_ms": 34.8,
+   "embed_calls": 7,
+   "embed_texts": 7,
+   "rerank_calls": 7,
+   "rerank_pairs": 84,
+   "api_embed_calls": 0,
+   "api_rerank_calls": 0,
+   "gpu_peak_mb": 2193.2,
+   "context_chars": 193,
+   "per_query": [
+    {
+     "query": "上次那个爬豆瓣电影的任务结果怎么样",
+     "returned": [
+      "D04"
+     ],
+     "gold": {
+      "D04": 2
+     }
+    },
+    {
+     "query": "之前写的sqlite备份脚本在哪",
+     "returned": [
+      "D07"
+     ],
+     "gold": {
+      "D07": 2,
+      "D13": 1
+     }
+    },
+    {
+     "query": "向量数据库那篇博客写完了吗",
+     "returned": [
+      "D10"
+     ],
+     "gold": {
+      "D10": 2
+     }
+    },
+    {
+     "query": "README 翻译的任务",
+     "returned": [
+      "D03",
+      "D12"
+     ],
+     "gold": {
+      "D03": 2,
+      "D12": 2
+     }
+    },
+    {
+     "query": "首页性能优化做到哪了",
+     "returned": [
+      "D08"
+     ],
+     "gold": {
+      "D08": 2
+     }
+    },
+    {
+     "query": "十月发票报销",
+     "returned": [
+      "D09"
+     ],
+     "gold": {
+      "D09": 2
+     }
+    },
+    {
+     "query": "帮我订一张去北京的机票",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "今天天气怎么样",
+     "returned": [],
+     "gold": {}
+    }
+   ]
+  },
+  "failures": {
+   "queries": 12,
+   "positives": 8,
+   "negatives": 4,
+   "recall": 1.0,
+   "ndcg": 1.0,
+   "mrr": 1.0,
+   "precision": 1.0,
+   "empty_on_positive": 0,
+   "noise_rate": 0,
+   "duplicates": 0,
+   "leaks": 0,
+   "returned_avg": 0.67,
+   "p50_ms": 30.9,
+   "p95_ms": 39.3,
+   "cold_ms": 37.5,
+   "embed_calls": 11,
+   "embed_texts": 11,
+   "rerank_calls": 6,
+   "rerank_pairs": 17,
+   "api_embed_calls": 0,
+   "api_rerank_calls": 0,
+   "gpu_peak_mb": 2186.6,
+   "context_chars": 0,
+   "per_query": [
+    {
+     "query": "ModuleNotFoundError: No module named 'numpy'",
+     "returned": [
+      "F01"
+     ],
+     "gold": {
+      "F01": 2
+     }
+    },
+    {
+     "query": "sqlite3.OperationalError: database is locked (while writing tasks.sqlite3)",
+     "returned": [
+      "F02"
+     ],
+     "gold": {
+      "F02": 2
+     }
+    },
+    {
+     "query": "torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 512.00 MiB",
+     "returned": [
+      "F03"
+     ],
+     "gold": {
+      "F03": 2
+     }
+    },
+    {
+     "query": "UnicodeDecodeError: 'gbk' codec can't decode byte 0xa4 in position 12",
+     "returned": [
+      "F04"
+     ],
+     "gold": {
+      "F04": 2
+     }
+    },
+    {
+     "query": "urllib.error.HTTPError: HTTP Error 429: Too Many Requests",
+     "returned": [
+      "F08"
+     ],
+     "gold": {
+      "F08": 2
+     }
+    },
+    {
+     "query": "fatal: not a git repository (or any of the parent directories): .git",
+     "returned": [
+      "F07"
+     ],
+     "gold": {
+      "F07": 2
+     }
+    },
+    {
+     "query": "PermissionError: [WinError 5] 拒绝访问。: C:\\data\\tasks.sqlite3",
+     "returned": [
+      "F06"
+     ],
+     "gold": {
+      "F06": 2
+     }
+    },
+    {
+     "query": "json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)",
+     "returned": [
+      "F09"
+     ],
+     "gold": {
+      "F09": 2
+     }
+    },
+    {
+     "query": "AssertionError: expected 3 got 4",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "KeyError: 'user_id'",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "ZeroDivisionError: division by zero",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "SyntaxError: invalid syntax",
+     "returned": [],
+     "gold": {}
+    }
+   ]
+  },
+  "remedies": {
+   "queries": 8,
+   "positives": 6,
+   "negatives": 2,
+   "recall": 1.0,
+   "ndcg": 1.0,
+   "mrr": 1.0,
+   "precision": 1.0,
+   "empty_on_positive": 0,
+   "noise_rate": 0,
+   "duplicates": 0,
+   "leaks": 0,
+   "returned_avg": 0.75,
+   "p50_ms": 35.5,
+   "p95_ms": 43.1,
+   "cold_ms": 57.8,
+   "embed_calls": 7,
+   "embed_texts": 7,
+   "rerank_calls": 7,
+   "rerank_pairs": 56,
+   "api_embed_calls": 0,
+   "api_rerank_calls": 0,
+   "gpu_peak_mb": 2200.8,
+   "context_chars": 0,
+   "per_query": [
+    {
+     "query": "运行测试时报 No module named requests",
+     "returned": [
+      "R01"
+     ],
+     "gold": {
+      "R01": 2
+     }
+    },
+    {
+     "query": "写入 tasks 数据库时提示 database is locked",
+     "returned": [
+      "R02"
+     ],
+     "gold": {
+      "R02": 2
+     }
+    },
+    {
+     "query": "加载重排模型时显存不够",
+     "returned": [
+      "R03"
+     ],
+     "gold": {
+      "R03": 2
+     }
+    },
+    {
+     "query": "读取中文CSV报gbk解码错误",
+     "returned": [
+      "R04"
+     ],
+     "gold": {
+      "R04": 2
+     }
+    },
+    {
+     "query": "the search API keeps returning 429",
+     "returned": [
+      "R05"
+     ],
+     "gold": {
+      "R05": 2
+     }
+    },
+    {
+     "query": "Fix the 'not a git repository' error in the build step",
+     "returned": [
+      "R06"
+     ],
+     "gold": {
+      "R06": 2
+     }
+    },
+    {
+     "query": "帮我写一份周报",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "Translate the README to French",
+     "returned": [],
+     "gold": {}
+    }
+   ]
+  }
+ }
+}

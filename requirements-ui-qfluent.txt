@@ -1,0 +1,5 @@
+# Installed by the installer with --no-deps after requirements-ui-core.txt.
+# qfluentwidgets declares a dependency on the PySide6 meta package; installing it
+# normally would pull PySide6-WebEngine (~125 MB) even though the desktop UI does
+# not use WebEngine. Essentials + Addons are installed from the core file instead.
+PySide6-Fluent-Widgets>=1.7,<2

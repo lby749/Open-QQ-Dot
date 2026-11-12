@@ -1,0 +1,12 @@
+.classpath
+.project
+.settings/
+target/
+.idea/
+.vscode/
+.direnv
+*.iml
+*.DS_Store
+*.releaseBackup
+release.properties
+.env

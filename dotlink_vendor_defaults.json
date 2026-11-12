@@ -1,0 +1,12 @@
+{
+  "runtime_dir": "napcat/runtime",
+  "workdir_env": "NAPCAT_WORKDIR",
+  "data_dir_env": "NAPCAT_QQ_DATA_DIR",
+  "pipe_env": "NAPCAT_DISABLE_PIPE",
+  "webui_token_env": "NAPCAT_WEBUI_SECRET_KEY",
+  "jwt_env": "NAPCAT_WEBUI_JWT_SECRET_KEY",
+  "webui_port_env": "NAPCAT_WEBUI_PREFERRED_PORT",
+  "quick_account_env": "NAPCAT_QUICK_ACCOUNT",
+  "token_salt": ".napcat",
+  "version_route": "/api/base/GetNapCatVersion"
+}

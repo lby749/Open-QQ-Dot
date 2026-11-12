@@ -1,0 +1,8 @@
+# Lightweight Qt runtime for the desktop UI.
+# The installer installs requirements-ui-core.txt, then installs qfluentwidgets
+# separately with --no-deps so its PySide6 meta dependency does not pull WebEngine.
+-r requirements-ui-core.txt
+
+# Manual install equivalent:
+#   uv pip install -r requirements-ui-core.txt
+#   uv pip install --no-deps -r requirements-ui-qfluent.txt

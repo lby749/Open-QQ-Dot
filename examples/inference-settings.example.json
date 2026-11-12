@@ -1,0 +1,5 @@
+{
+  "local_models_enabled": false,
+  "inference_device": "auto",
+  "local_model_devices": {}
+}

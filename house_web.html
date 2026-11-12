@@ -1,0 +1,1786 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#eff6ff">
+<title>Open QQ Dot · 好友小屋</title>
+<link rel="icon" type="image/png" href="/app-icon.png">
+<link rel="apple-touch-icon" href="/app-icon.png">
+<style>
+/* 2026-10-12 user: the phone app's own look (Material 3, ui/theme/Color.kt). Inside the app the colours are replaced
+   by the app's current scheme (dynamic colour on Android 12+), see FriendHouseActivity.themeScript. */
+:root{--primary:#2563eb;--on-primary:#fff;--primary-container:#dbeafe;--on-primary-container:#1e3a8a;
+--secondary-container:#e0edff;--on-secondary-container:#1e3a8a;--surface:#eff6ff;--surface-low:#fff;
+--surface-container:#fff;--surface-high:#eaf2ff;--on-surface:#0f172a;--on-surface-variant:#64748b;
+--outline:#94a3b8;--outline-variant:#dbeafe;--error:#ba1a1a;--ok:#2e7d32;--inverse-surface:#1e3a8a;--inverse-on-surface:#fff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--surface);color:var(--on-surface);font:14px/20px Roboto,"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;letter-spacing:.25px;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+header{position:sticky;top:0;z-index:2;background:var(--surface);min-height:64px;padding:8px 8px 8px 16px;display:flex;align-items:center;gap:8px}
+header h1{font-size:22px;line-height:28px;font-weight:400;margin:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.in-app header{display:none}
+main{padding:8px 16px 96px;max-width:720px;margin:0 auto}
+body.chat-page main{padding-bottom:176px}
+.card{background:var(--surface-low);border-radius:12px;padding:16px;margin-bottom:12px}
+.card h2{font-size:16px;line-height:24px;font-weight:500;letter-spacing:.15px;margin:0 0 8px}
+.muted{color:var(--on-surface-variant);font-size:12px;line-height:16px;letter-spacing:.4px}
+button{font-family:inherit;font-size:14px;line-height:20px;font-weight:500;letter-spacing:.1px;border:0;background:var(--secondary-container);color:var(--on-secondary-container);border-radius:20px;padding:0 24px;min-height:40px;cursor:pointer}
+button.primary{background:var(--primary);color:var(--on-primary)}
+button:active{filter:brightness(.92)}
+button:disabled{opacity:.38}
+header button{background:none;color:var(--primary);padding:0 12px}
+a{font-weight:500;text-decoration:none;display:inline-flex;align-items:center;min-height:40px;padding:0 24px;border-radius:20px;background:var(--primary);color:var(--on-primary);margin:8px 0}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.grow{flex:1}
+.state{font-size:12px;line-height:16px;font-weight:500;padding:6px 12px;border-radius:8px;border:1px solid var(--outline-variant)}
+.ok{color:var(--ok)}.bad{color:var(--error)}
+pre{white-space:pre-wrap;word-break:break-word;margin:0;font-family:inherit;font-size:14px;line-height:20px}
+.switch{display:flex;align-items:center;gap:16px;padding:12px 0;border-top:1px solid var(--outline-variant)}
+.switch:first-of-type{border-top:0}
+input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:0 0 52px;width:52px;height:32px;margin:0;border-radius:16px;border:2px solid var(--outline);background:var(--surface-high);position:relative;transition:background .15s}
+input[type=checkbox]::after{content:'';position:absolute;top:6px;left:6px;width:16px;height:16px;border-radius:50%;background:var(--outline);transition:all .15s}
+input[type=checkbox]:checked{background:var(--primary);border-color:var(--primary)}
+input[type=checkbox]:checked::after{top:2px;left:22px;width:24px;height:24px;background:var(--on-primary)}
+nav.tabs{position:fixed;bottom:0;left:0;right:0;z-index:2;display:flex;background:var(--surface-container);padding:12px 0 calc(16px + env(safe-area-inset-bottom))}
+nav.tabs button{flex:1;background:none;color:var(--on-surface-variant);padding:0;min-height:32px;font-size:12px;line-height:16px;letter-spacing:.5px;display:flex;justify-content:center}
+nav.tabs button span{display:inline-block;padding:6px 12px;border-radius:16px}
+nav.tabs button.on{color:var(--on-surface);font-weight:600}
+nav.tabs button.on span{background:var(--secondary-container);color:var(--on-secondary-container)}
+.bubble{max-width:85%;width:fit-content;padding:10px 16px;border-radius:20px;margin:4px 0;white-space:pre-wrap;word-break:break-word}
+.them{background:var(--surface-high);border-bottom-left-radius:4px}
+.me{background:var(--primary-container);color:var(--on-primary-container);margin-left:auto;border-bottom-right-radius:4px}
+.bubble.model{background:#ecfdf5;color:#065f46;margin-right:auto;border:1px solid #a7f3d0;border-bottom-left-radius:4px}
+.bubble.model-me{background:#dcfce7;color:#065f46;margin-left:auto;border:1px solid #86efac;border-bottom-right-radius:4px}
+.stamp{font-size:11px;line-height:16px;color:var(--on-surface-variant);margin-top:12px}
+.stamp.me{background:none;color:var(--on-surface-variant);text-align:right}
+textarea{width:100%;min-height:50vh;font-family:inherit;font-size:14px;line-height:20px;padding:12px 16px;border-radius:4px;border:1px solid var(--outline);background:transparent;color:var(--on-surface)}
+textarea:focus,.field>input:focus,.field>select:focus{outline:none;border:2px solid var(--primary)}
+textarea.small{min-height:112px}
+textarea.tall{min-height:260px}
+.field{display:flex;align-items:flex-start;gap:12px;padding:8px 0}
+.field>span{flex:0 0 84px;color:var(--on-surface-variant);font-size:12px;line-height:16px;padding-top:14px}
+.field>input,.field>select{flex:1;min-width:0;font:inherit;padding:0 16px;border-radius:4px;border:1px solid var(--outline);background:transparent;color:var(--on-surface);min-height:48px}
+.field>textarea{flex:1;min-width:0;min-height:48px}
+.tnode{position:relative;padding:3px 6px 4px 22px;border-radius:8px}
+.tnode.open{display:block}
+.tnode:not(.open){display:inline-block;min-width:56px}
+.tnode .tdot{position:absolute;left:4px;top:8px;width:14px;height:14px;border-radius:50%;border:2px solid;box-sizing:border-box;box-shadow:inset 0 0 0 3px var(--surface)}
+.tnode.big .tdot{left:3px;top:7px;width:16px;height:16px}
+.tnode .ttl{font-weight:600;line-height:20px}
+.tnode .sub{font-size:12px;line-height:18px}
+.tnode.open{background:rgba(37,99,235,.08)}
+.tnode.kids::after{content:'';position:absolute;left:10px;top:24px;bottom:0;border-left:1.5px solid var(--outline)}
+.tkids{margin-left:10px}
+.tkids>.titem{position:relative;padding-left:6px}
+.tkids>.titem::before{content:'';position:absolute;left:0;top:0;width:10px;height:15px;border-left:1.5px solid var(--outline);border-bottom:1.5px solid var(--outline);border-bottom-left-radius:8px}
+.tkids>.titem:not(:last-child)::after{content:'';position:absolute;left:0;top:0;bottom:0;border-left:1.5px solid var(--outline)}
+#toast{position:fixed;left:16px;right:16px;bottom:96px;z-index:3;background:var(--inverse-surface);color:var(--inverse-on-surface);padding:14px 16px;border-radius:4px;box-shadow:0 3px 6px rgba(0,0,0,.25);display:none}
+.problem{border-top:1px solid var(--outline-variant);padding:12px 0}
+.list button{display:flex;width:100%;justify-content:space-between;align-items:center;background:none;color:var(--on-surface);border-radius:0;padding:0 4px;min-height:56px;font-size:16px;line-height:24px;font-weight:400;border-top:1px solid var(--outline-variant)}
+.list button:first-child{border-top:0}
+details{border-top:1px solid var(--outline-variant);padding:4px 0}
+summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px;list-style:none}
+summary::-webkit-details-marker{display:none}
+details pre{margin:8px 0;font-size:13px}
+.card h2+h2,.card pre+h2,.card div+h2{margin-top:16px}
+.sticker{display:flex;gap:12px;align-items:flex-start;margin-bottom:8px}
+.sticker img{flex:0 0 96px;width:96px;height:96px;object-fit:contain;border-radius:8px;background:var(--surface-high)}
+
+/* Mobile Agent Console */
+.agent-wrap{padding-bottom:120px}
+.agent-topbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.agent-select{min-width:0;min-height:40px;border-radius:10px;border:1px solid #dbeafe;background:#fff;font-size:13px;padding:0 10px;color:var(--on-surface)}
+.agent-topbar>.agent-icon-btn:last-child{grid-column:1/-1}
+.agent-icon-btn{min-height:40px;padding:0 12px;border-radius:10px;font-size:13px;border:1px solid #dbeafe;background:#fff;color:#1e3a8a;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:500}
+.agent-pill{display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #dbeafe;border-left:3px solid var(--primary);border-radius:12px;padding:10px 14px;margin-bottom:12px;cursor:pointer}
+.agent-pill:active{filter:brightness(0.96)}
+.agent-pill-info{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.agent-pill-badge{background:var(--primary-container);color:var(--on-primary-container);font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px}
+.agent-pill-effort{font-size:12px;color:var(--on-surface-variant);font-weight:500}
+.agent-msg-list{display:flex;flex-direction:column;gap:8px;min-height:180px}
+.agent-msg-assistant{background:#fff;border-radius:14px;padding:12px 14px;border:1px solid #dbeafe;border-left:3px solid var(--primary)}
+.agent-msg-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:12px;color:#1d4ed8}
+.agent-msg-body{font-size:14px;line-height:22px;white-space:pre-wrap;word-break:break-word;color:var(--on-surface)}
+details.thought-card{background:#f8fafc;border:1px dashed #93c5fd;border-radius:8px;padding:6px 10px;margin:4px 0 8px;border-top:1px dashed #93c5fd}
+details.thought-card summary{min-height:24px;font-size:12px;font-weight:500;color:#0284c7;cursor:pointer;list-style:none}
+details.thought-card summary::-webkit-details-marker{display:none}
+details.thought-card pre{font-size:12px;line-height:18px;color:#475569;background:transparent;white-space:pre-wrap;word-break:break-word;margin:4px 0 0}
+.generating-card{display:flex;align-items:center;gap:10px;background:#f0f9ff;border:1px dashed #38bdf8;border-radius:12px;padding:12px 16px;margin:8px 0;color:#0284c7;font-size:13px;font-weight:500;animation:pulse 1.8s infinite}
+@keyframes pulse{0%,100%{opacity:0.65}50%{opacity:1}}
+.agent-dock{position:fixed;bottom:58px;left:0;right:0;background:rgba(255,255,255,0.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--outline-variant);padding:8px 12px;z-index:5}
+.agent-dock-inner{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:6px}
+.agent-dock-chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.agent-dock-chips::-webkit-scrollbar{display:none}
+.chip{background:var(--surface-high);color:var(--on-surface-variant);font-size:11px;font-weight:500;padding:4px 10px;border-radius:12px;white-space:nowrap;border:1px solid var(--outline-variant);cursor:pointer}
+.chip:active,.chip.active{background:var(--secondary-container);color:var(--on-secondary-container);border-color:var(--primary)}
+.agent-input-row{display:flex;gap:8px;align-items:flex-end}
+.chat-identity-row{display:flex;align-items:center;gap:8px;padding:0 4px 5px}
+.chat-identity-row .agent-select{flex:0 0 116px;min-height:36px;font-size:12px}
+.chat-identity-row .muted{flex:1;font-size:11px;line-height:15px}
+.chat-identity-row select:focus{outline:none;border-color:var(--primary)}
+.agent-dock.model-mode{border-top-color:#a7f3d0;background:rgba(240,253,244,.97)}
+.agent-dock.model-mode .agent-input-row button{background:#059669}
+.task-tabs{flex-wrap:nowrap!important;overflow-x:auto;padding-bottom:4px}
+.task-tabs::-webkit-scrollbar{display:none}
+.agent-input-row textarea{flex:1;min-height:42px;max-height:120px;padding:10px 14px;border-radius:20px;border:1px solid var(--outline);background:var(--surface-high);resize:none;font-size:14px;line-height:20px;color:var(--on-surface)}
+.agent-input-row button{flex:0 0 68px;min-height:42px;border-radius:20px;padding:0 10px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.modal-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(15,23,42,0.45);z-index:1000;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:calc(24px + env(safe-area-inset-top)) 12px 24px;-webkit-overflow-scrolling:touch}
+.modal-sheet{background:#fff;width:100%;max-width:720px;margin:0 auto;border-radius:16px;padding:20px 20px 26px;max-height:calc(100vh - 48px);overflow-y:auto;box-sizing:border-box;border:1px solid #dbeafe;box-shadow:0 20px 48px rgba(15,23,42,.22);-webkit-overflow-scrolling:touch}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+</style>
+</head>
+<body>
+<header><h1 id="title">OpenQQDots</h1><button id="reload">刷新</button></header>
+<main id="main"></main>
+<nav class="tabs" id="tabs" hidden></nav>
+<div id="toast"></div>
+<script>
+'use strict';
+// 2026-10-12 user: the phone has every page of the desktop panel (PAGES, its order and names); the bottom bar keeps
+// The four tabs used most, and All lists them all
+const TABS = [['status', '状态'], ['agent', '控制台'], ['chat', '聊天'], ['memory', '记忆'], ['more', '全部']];
+const PAGES = [['agent', '智能体控制台'], ['collab', '智能体协作'], ['study', '公共学习资料'], ['workflows', '可学习工作流'], ['status', '小屋状态'], ['basic', '好友资料'], ['memory', '长期记忆'], ['style', '回复方式'], ['voice', '语音回复'], ['proactive', '主动任务与关怀'],
+               ['topics', '话题资料'], ['stickers', '表情收藏'], ['template', '人格模板'], ['model', '模型设置'], ['background', '后台整理与反思'],
+               ['chat', '聊天记录'], ['emotion', '情绪记录'], ['context', '本轮输入上下文']];
+let token = '', friendQQ = '', view = {name: 'home'}, timer = null, chatLimit = 100, emotionLimit = 100;
+let chatSenderIdentity = 'friend';
+
+function readToken() {
+  const hash = new URLSearchParams(location.hash.slice(1));
+  friendQQ = new URLSearchParams(location.search).get('qq') || '';
+  token = '';
+  if (!/^\d{5,12}$/.test(friendQQ)) return;
+  const key = 'houseToken:' + friendQQ;
+  if (hash.get('t')) {
+    token = hash.get('t');
+    try { localStorage.setItem(key, token); } catch (e) {}
+    history.replaceState(null, '', location.pathname + location.search);
+  } else {
+    try { token = localStorage.getItem(key) || ''; } catch (e) {}
+  }
+}
+
+async function api(path, body) {
+  const response = await fetch('/api/' + path, {
+    method: body === undefined ? 'GET' : 'POST',
+    headers: {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'},
+    body: body === undefined ? undefined : JSON.stringify(body)});
+  const data = await response.json().catch(() => ({error: '电脑未响应'}));
+  if (!response.ok) {const error = new Error(data.error || '请求失败'); error.status = response.status; throw error;}
+  return data;
+}
+
+function el(tag, attrs, ...children) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(attrs || {})) {
+    if (key === 'onclick' || key === 'onchange') node[key] = value;
+    else if (key === 'class') node.className = value;
+    else node.setAttribute(key, value);
+  }
+  for (const child of children) if (child != null) node.append(child instanceof Node ? child : String(child));
+  return node;
+}
+
+function toast(text) {
+  const box = document.getElementById('toast');
+  box.textContent = text;
+  box.style.display = 'block';
+  clearTimeout(box.timer);
+  box.timer = setTimeout(() => box.style.display = 'none', 3000);
+}
+
+async function act(button, work) {
+  button.disabled = true;
+  try { const result = await work(); if (result && result.message) toast(result.message); }
+  catch (error) { toast(error.message); }
+  finally { button.disabled = false; }
+}
+
+function card(title, ...children) { return el('div', {class: 'card'}, title ? el('h2', {}, title) : null, ...children); }
+function stateClass(state) { return state === 'running' ? 'ok' : ['attention', 'needs attention'].includes(state) ? 'bad' : 'muted'; }
+function stateLabel(state) { return ({running:'运行中', paused:'已暂停', attention:'需要处理', 'needs attention':'需要处理'})[state] || state; }
+const TASK_STATES = {PENDING:'待执行', PLANNING:'规划中', RUNNING:'执行中', VERIFYING:'验收中',
+  WAITING_APPROVAL:'待授权', WAITING_REVIEW:'待验收', WAITING_RESOURCE:'等待资源', BLOCKED_BY_DEPENDENCY:'等待前置任务',
+  PAUSED:'已暂停', BLOCKED:'受阻', FAILED:'失败', COMPLETED:'已完成', CANCELLED:'已取消'};
+const EFFORT_LABELS = {off:'关闭', none:'不思考', minimal:'极低', low:'低', medium:'中', high:'高',
+  xhigh:'极高', extra:'极高', max:'最高', ultracode:'极高（代码）', ultra:'极高'};
+
+// 2026-10-11 user: the phone app paired with this computer; the model may ask it (front app, usage, screen text).
+function phoneCard(qq, phone) {
+  const info = phone || {};
+  const body = [el('div', {class: 'muted'}, info.note || '')];
+  if (info.mcp_url) body.push(el('div', {class: 'muted'}, '手机地址：' + info.mcp_url));
+  const pairing = `friendhouse://pair?pc=${encodeURIComponent(location.origin + '/')}&qq=${qq}&t=${encodeURIComponent(token)}`;
+  body.push(el('a', {href: pairing}, '连接手机应用'));
+  body.push(el('div', {class: 'muted'}, '仅配对当前好友，其他好友需分别扫码。'));
+  return card('手机应用 · ' + (!info.connected ? '未配对' : info.online ? '在线' : '已配对（离线）'), ...body);
+}
+
+// 2026-10-11 user: the phone edits the same settings as the desktop panel; its rules live in house_status
+function options(list, value) {
+  return list.map(item => el('option', Object.assign({value: item.id}, String(item.id) === String(value) ? {selected: 'selected'} : {}), item.name));
+}
+
+function field(label, node) {
+  if (['INPUT', 'SELECT', 'TEXTAREA'].includes(node.tagName)) node.setAttribute('aria-label', label);
+  return el('label', {class: 'field'}, el('span', {}, label), node);
+}
+function input(attrs) { return el('input', Object.assign({type: 'text'}, attrs || {})); }
+function area(attrs) { return el('textarea', Object.assign({class: 'small'}, attrs || {})); }
+
+function form(fields, button, work) {
+  const save = el('button', {class: 'primary'}, button);
+  save.onclick = () => act(save, () => work());
+  return el('div', {}, ...fields, el('div', {class: 'row'}, el('span', {class: 'grow'}), save));
+}
+
+function numberText(value) { return value === '' || value === null || value === undefined ? '' : String(value); }
+
+function show(...nodes) {
+  const main = document.getElementById('main');
+  main.replaceChildren(...nodes);
+}
+
+async function openHouse() {
+  view = {name: 'home'};
+  document.getElementById('tabs').hidden = true;
+  show(card('', el('div', {class: 'muted'}, '正在打开好友小屋…')));
+  const data = await api('session');
+  if (data.qq !== friendQQ) throw new Error('二维码与好友不匹配，请在电脑上重新扫码。');
+  openFriend(data.qq, data.name, 'status');
+}
+
+function openFriend(qq, name, tab) {
+  view = {name: 'friend', qq, friendName: name, tab};
+  document.getElementById('title').textContent = name;
+  document.title = name;  // the phone app shows it in its own top bar
+  const tabs = document.getElementById('tabs');
+  tabs.hidden = false;
+  const inBar = TABS.some(([key]) => key === tab);
+  tabs.replaceChildren(...TABS.map(([key, label]) => {
+    const button = el('button', {class: key === tab || (key === 'more' && !inBar) ? 'on' : ''}, el('span', {}, label));
+    button.onclick = () => { chatLimit = 100; emotionLimit = 100; openFriend(qq, name, key); };
+    return button;
+  }));
+  window.scrollTo(0, 0);
+  render().catch(error => toast(error.message));
+}
+
+async function render() {
+  document.body.classList.remove('chat-page');
+  const mainNode = document.querySelector('main');
+  if (mainNode) mainNode.style.paddingBottom = '';
+  if (view.name === 'home') return openHouse();
+  return PAGE_VIEWS[view.tab](view.qq);
+}
+
+// All: every desktop page in order
+function morePage(qq) {
+  const items = PAGES.map(([key, label]) => {
+    const item = el('button', {}, el('span', {}, label), el('span', {class: 'muted'}, '›'));
+    item.onclick = () => openFriend(qq, view.friendName, key);
+    return item;
+  });
+  show(card('全部页面', el('div', {class: 'muted'}, '与桌面端对应的管理入口。'), el('div', {class: 'list'}, ...items)));
+}
+
+async function statusPage(qq) {
+  const data = await api('friend/' + qq);
+  const toggle = el('button', {}, data.paused ? '启用好友' : '暂停好友');
+  toggle.onclick = () => act(toggle, async () => { const r = await api(`friend/${qq}/toggle`, {}); await render(); return r; });
+  const switches = data.switches.map(item => {
+    const box = el('input', {type: 'checkbox'});
+    box.checked = item.on;
+    box.onchange = () => act(box, async () => {
+      try { return await api(`friend/${qq}/switch`, {key: item.key, on: box.checked}); }
+      catch (error) { box.checked = !box.checked; throw error; }
+    });
+    return el('label', {class: 'switch'}, el('div', {class: 'grow'}, el('div', {}, item.title), el('div', {class: 'muted'}, item.note)), box);
+  });
+  const problems = data.rows.map(item => {
+    const retry = el('button', {}, '重试');
+    retry.disabled = item.state !== 'failed';
+    retry.onclick = () => act(retry, async () => { const r = await api(`friend/${qq}/retry`, {message_id: item.message_id}); await render(); return r; });
+    return el('div', {class: 'problem'}, el('div', {class: 'row'},
+      el('span', {class: 'grow muted'}, item.created_at.slice(5, 16).replace('T', ' ')), retry),
+      el('div', {}, item.body || ''), el('div', {class: 'muted'}, item.error || ''));
+  });
+  show(card('', el('div', {class: stateClass(data.state)}, '状态：' + stateLabel(data.state)), el('pre', {}, data.summary), el('div', {class: 'row'}, toggle)),
+       card('功能开关', ...switches),
+       phoneCard(qq, data.phone),
+       card('失败和待处理的回复', ...(problems.length ? problems : [el('div', {class: 'muted'}, '暂无失败回复')])),
+       card('最近活动', el('pre', {}, data.log.join('\n') || '暂无')));
+}
+
+async function chatPage(qq) {
+  document.body.classList.add('chat-page');
+  document.querySelector('main').style.paddingBottom = '230px';
+  const data = await api(`friend/${qq}/history?limit=${chatLimit}`);
+  const older = el('button', {}, '加载更早记录');
+  older.onclick = () => { chatLimit += 100; render().catch(error => toast(error.message)); };
+  const items = data.messages.flatMap(item => {
+    const modelView = chatSenderIdentity === 'model';
+    const isModel = item.identity === 'model';
+    const mine = modelView ? isModel : (item.direction !== 'friend' && !isModel);
+    const sideClass = mine ? (modelView ? 'model-me' : 'me') : (isModel ? 'model' : 'them');
+    const who = mine ? (modelView ? '模型' : '我') : (isModel ? '模型' : '好友');
+    const bubble = el('div', {class: 'bubble ' + sideClass}, item.body);
+    if (item.voice) {
+      const audio = el('audio', {controls: 'controls', preload: 'none'});
+      bubble.append(el('div', {class: 'muted'}, '🔊 语音'), audio);
+      voiceAudio(qq, item.voice_name, audio).catch(() => {});
+    }
+    return [el('div', {class: 'stamp' + (mine ? ' me' : '')}, `${who} · ${item.created_at.slice(5, 16).replace('T', ' ')}`),
+            bubble];
+  });
+  const chatInput = el('textarea', {placeholder: '输入消息…', rows: '1'});
+  const chatIdentity = el('select', {class: 'agent-select', style: 'flex:0 0 116px;min-height:42px'},
+    el('option', Object.assign({value: 'friend'}, chatSenderIdentity === 'friend' ? {selected: 'selected'} : {}), '好友身份'),
+    el('option', Object.assign({value: 'model'}, chatSenderIdentity === 'model' ? {selected: 'selected'} : {}), '模型身份'));
+  chatIdentity.value = chatSenderIdentity;
+  const chatHint = el('div', {class: 'muted', style: 'padding:0 4px 2px;'}, '好友身份：直接以当前 QQ 账号发送');
+  const sendChat = el('button', {class: 'primary'}, '发送');
+  const dock = el('div', {class: 'agent-dock'});
+  const applyIdentity = () => {
+    const asModel = chatIdentity.value === 'model';
+    chatInput.placeholder = asModel ? '输入指令，生成后发送…' : '输入消息…';
+    chatHint.textContent = asModel ? '模型生成后，以 QQ 账号发出' : '直接以当前 QQ 账号发送';
+    dock.classList.toggle('model-mode', asModel);
+  };
+  chatIdentity.onchange = () => {
+    chatSenderIdentity = chatIdentity.value;
+    applyIdentity();
+    render().catch(error => toast(error.message));
+  };
+  applyIdentity();
+  const sendChatMessage = async () => {
+    const text = chatInput.value.trim();
+    if (!text) return;
+    sendChat.disabled = true;
+    chatIdentity.disabled = true;
+    sendChat.textContent = chatIdentity.value === 'model' ? '生成中' : '发送中';
+    try {
+      const body = {text};
+      const asModel = chatIdentity.value === 'model';
+      if (asModel) body.sid = '__model__';
+      else body.sid = '__qq_stream__';
+      const optimistic = el('div', {class: 'bubble ' + (asModel ? 'model' : 'me')}, text);
+      document.querySelector('main').append(optimistic);
+      window.scrollTo(0, document.body.scrollHeight);
+      try {
+        await api(`friend/${qq}/agent_send`, body);
+      } catch (error) {
+        optimistic.remove();
+        throw error;
+      }
+      chatInput.value = '';
+      toast(chatIdentity.value === 'model' ? '已用模型身份发送' : '已用好友身份发送');
+      await render();
+    } catch (error) {
+      toast('发送失败：' + error.message);
+    } finally {
+      sendChat.disabled = false;
+      chatIdentity.disabled = false;
+      sendChat.textContent = '发送';
+    }
+  };
+  sendChat.onclick = sendChatMessage;
+  chatInput.onkeydown = (event) => {
+    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      sendChatMessage();
+    }
+  };
+  dock.append(el('div', {class: 'agent-dock-inner'},
+    el('div', {class: 'chat-identity-row'}, chatIdentity, chatHint),
+    el('div', {class: 'agent-input-row'}, chatInput, sendChat)));
+  show(card('', el('div', {class: 'row'}, el('span', {class: 'grow muted'}, `共 ${data.count} 条消息，显示最近 ${data.messages.length} 条`), older)),
+       el('div', {}, ...(items.length ? items : [el('div', {class: 'muted'}, '暂无聊天记录')])),
+       dock);
+  if (chatLimit === 100) window.scrollTo(0, document.body.scrollHeight);
+}
+
+async function memoryPage(qq) {
+  const data = await api(`friend/${qq}/memory`);
+  const text = el('textarea', {});
+  text.value = data.text;
+  let revision = data.revision;
+  const save = el('button', {class: 'primary'}, '保存记忆');
+  save.onclick = () => act(save, async () => { const r = await api(`friend/${qq}/memory`, {text: text.value, revision}); revision = r.revision; return r; });
+  show(card('长期记忆', el('div', {class: 'muted'}, '每行一条。记忆锁定和条目管理在桌面端设置。'), text, el('div', {class: 'row'}, el('span', {class: 'grow'}), save)));
+}
+
+// 2026-10-11 user: the phone edits the same settings as the desktop panel; the rules and the writes live on the
+// computer (house_status / house_web), these are only the forms.
+async function basicPage(qq) {
+  const info = (await api(`friend/${qq}/settings`)).basic_info;
+  const basics = {
+    nickname: input({value: info.nickname}),
+    age: input({value: info.age}),
+    birthday: input({value: info.birthday}),
+    interests: input({value: info.interests, placeholder: '例如：游戏、羽毛球、猫'}),
+    deep_interests: input({value: info.deep_interests, placeholder: '例如：历史、全球经济'}),
+    notes: area({value: info.notes})};
+  const basicFields = [
+    field('昵称', basics.nickname), field('年龄', basics.age), field('生日', basics.birthday),
+    field('兴趣', basics.interests), field('长期兴趣', basics.deep_interests), field('备注', basics.notes),
+    el('div', {class: 'muted'}, '兴趣用逗号分隔。话题资料库会整理相关网络资料，长期兴趣不自动过期。')];
+  show(card('好友资料', form(basicFields, '保存好友资料', async () => {
+    const body = {};
+    for (const key of Object.keys(basics)) body[key] = basics[key].value;
+    return api(`friend/${qq}/basic`, body);
+  })));
+}
+
+async function stylePage(qq) {
+  const data = await api(`friend/${qq}/settings`);
+  const styleBox = area({class: 'tall', value: data.style});
+  const templateSelect = el('select', {}, ...options(data.templates, data.persona_template));
+  const proactiveStyle = area({value: data.proactive_style});
+  const policies = Object.fromEntries(['emotion_policy', 'timing_policy', 'memory_policy']
+    .map(key => [key, area({value: data[key] || ''})]));
+  const styleNote = el('div', {class: 'muted'}, '1. 人设：优先遵循身份、关系边界与安全底线。'
+    + '2. 人格模板：控制消息长度、节奏、表情和常用语。'
+    + '3. 主动风格：控制问候和开场方式。'
+    + '4. 时段关怀：定义关心内容，语气沿用人设和模板。');
+  const styleFields = [styleNote, field('人设与指令', styleBox), field('人格模板', templateSelect),
+                       field('主动回复风格', proactiveStyle),
+                       el('div', {class: 'muted'}, 'QQ 聊天、任务接单和进展汇报都沿用当前好友的人设与回复方式。以下策略填写即开启，清空即关闭。'),
+                       field('情绪策略', policies.emotion_policy), field('时机策略', policies.timing_policy),
+                       field('记忆策略', policies.memory_policy)];
+  show(card('人设与回复方式', form(styleFields, '保存回复方式', () => api(`friend/${qq}/style`, {
+    style: styleBox.value, persona_template: templateSelect.value, proactive_style: proactiveStyle.value,
+    ...Object.fromEntries(Object.entries(policies).map(([key, node]) => [key, node.value]))}))));
+}
+
+async function voicePage(qq) {
+  const data = await api(`friend/${qq}/voice`), value = data.settings;
+  const mode = el('select', {}, ...options([{id:'off', name:'关闭'}, {id:'always', name:'短消息全部用语音'},
+    {id:'sometimes', name:'偶尔用语音'}], value.mode));
+  const atmosphere = el('select', {}, ...options([{id:'dry', name:'干声（不处理）'},
+    {id:'phone_near', name:'手机近讲（可选，先试听）'}, {id:'room', name:'室内自然'},
+    {id:'telephone', name:'电话感（会降低可懂度）'}], (value.atmosphere || {}).preset || 'dry'));
+  const tier = el('select', {}, ...options(data.models.map(item => ({id:item.id,
+    name:item.name + (item.installed ? '（已下载）' : '（未下载）')})), value.tier));
+  const speaker = input({type:'number', min:0, value:value.speaker});
+  const speed = input({type:'number', min:0.5, max:2, step:0.05, value:value.speed});
+  const maxChars = input({type:'number', min:5, max:300, value:value.max_chars});
+  const ratio = input({type:'number', min:0, max:100, value:Math.round(value.ratio * 100)});
+  const reference = area({value:value.reference_text, maxlength:500});
+  const design = area({value:value.design, maxlength:500});
+  const update = () => {
+    const selected = data.models.find(item => item.id === tier.value);
+    speaker.max = selected.speakers - 1;
+    if (Number(speaker.value) > Number(speaker.max)) speaker.value = 0;
+    speaker.disabled = selected.speakers <= 1;
+    speed.disabled = tier.value === 'large';
+    ratio.disabled = mode.value !== 'sometimes';
+  };
+  tier.onchange = mode.onchange = update;
+  update();
+  show(voiceInputCard(qq, data.input), card('QQ 语音回复', form([
+    el('div', {class:'muted'}, '只作用于当前好友。含链接、代码、图片或超过字数限制的消息仍发文字；模型不可用时自动改发文字。'),
+    field('发送方式', mode), field('语音模型', tier), field('声学氛围', atmosphere),
+    field('音色编号', speaker), field('语速', speed),
+    field('最多字数', maxChars), field('语音比例（%）', ratio),
+    el('div', {class:'muted'}, '声音克隆参考语音：' + (data.reference_set ? '已在电脑上配置。' : '尚未配置。')
+      + '模型下载、参考文件和克隆运行环境请在电脑上管理。'),
+    field('参考语音原文', reference), field('声音描述', design)], '保存语音设置', () => api(`friend/${qq}/voice`, {
+      mode:mode.value, tier:tier.value, atmosphere:{preset:atmosphere.value},
+      speaker:Number(speaker.value), speed:Number(speed.value),
+      max_chars:Number(maxChars.value), ratio:Number(ratio.value)/100, reference_text:reference.value, design:design.value}))));
+}
+
+// 2026-10-26 user: see directly which agents are working and what they handed each other (collaboration_view.py)
+const COLLAB_STATUS = {working: ['工作中', 'ok'], waiting: ['待处理', 'bad'], idle: ['空闲', 'muted']};
+const PROVIDER_COLORS = {codex: '#0F9D78', claude: '#D97757', antigravity: '#4285F4', orchestrator: '#64748B', api: '#8B5CF6',
+  dsh: '#1D4ED8', deepseek: '#1D4ED8', local: '#0EA5E9', mcp: '#A855F7'};
+const KIND_COLORS = {handoff: '#2563EB', response: '#16A34A', finding: '#D97706', request: '#7C3AED', review: '#0D9488', note: '#94A3B8'};
+function clockText(seconds) {
+  const moment = new Date(seconds * 1000), today = new Date().toDateString() === moment.toDateString();
+  return moment.toLocaleString('zh-CN', today ? {hour: '2-digit', minute: '2-digit', second: '2-digit'}
+    : {month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'});
+}
+
+// The node's state in at most five characters (collaboration_view.tree's brief), coloured like the desktop.
+const BRIEF_GOOD = ['交回', '通过', '完成', '已复', '汇总'], BRIEF_BAD = ['失败', '未过', '取消', '受阻'];
+const BRIEF_BUSY = ['处理', '等待', '待复', '已派', '进行', '待验', '待批', '等资', '待办', '暂停'];
+function briefColor(text) {
+  if (text.includes('/')) { const [done, total] = text.split('/'); return done === total ? '#15803D' : '#B45309'; }
+  return BRIEF_GOOD.includes(text) ? '#15803D' : BRIEF_BAD.includes(text) ? '#B91C1C' : BRIEF_BUSY.includes(text) ? '#B45309' : '#64748B';
+}
+
+function nodeColor(node, providers) {
+  if (node.type === 'task') return '#2563EB';
+  const name = (node.agent_id || '').split('/').pop();
+  return PROVIDER_COLORS[node.provider] || PROVIDER_COLORS[name === 'supervisor' ? 'orchestrator' : name]
+    || PROVIDER_COLORS[providers[node.agent_id]] || '#475569';
+}
+
+// One collaboration as a vertical node tree (2026-10-26 user, after a reference picture): a round node per row, a
+// bold title, and under it the step's state in at most five characters; tapping a message node opens it.
+function collabTree(node, thread, providers) {
+  const color = nodeColor(node, providers), brief = node.brief || '';
+  const title = node.type === 'message'  // four or five characters wide: the step's tag, then who did it
+    ? [el('span', {style: `color:${KIND_COLORS[node.kind] || 'inherit'}`}, node.tag), node.short]
+    : [el('span', {style: node.type === 'task' ? `color:${color}` : ''}, node.short)];
+  const box = el('div', {class: 'tnode' + (node.type !== 'message' ? ' big' : '') + (node.children.length ? ' kids' : '')},
+    el('span', {class: 'tdot', style: `border-color:${color};background:${color}`}),
+    el('div', {class: 'ttl'}, ...title),
+    el('div', {class: 'sub'}, el('span', {style: `color:${briefColor(brief)}`}, brief)));
+  if (node.type === 'message') {
+    const message = thread.messages[node.index];
+    const body = el('pre', {class: 'muted', style: 'display:none;margin-top:6px;white-space:pre-wrap'},
+      `${node.kind_label || ''} · ${node.label}${node.at ? '　' + clockText(node.at) : ''}
+${node.detail || ''}
+${message.from_label} → ${message.to.map(item => item.label + '（' + item.state_label + '）').join('、') || '—'}
+
+${message.excerpt}`);
+    box.append(body);
+    box.style.cursor = 'pointer';
+    box.onclick = () => {
+      const open = body.style.display === 'none';
+      body.style.display = open ? 'block' : 'none';
+      box.classList.toggle('open', open);
+    };
+  }
+  const kids = node.children.length ? el('div', {class: 'tkids'}, ...node.children.map(child => collabTree(child, thread, providers))) : null;
+  return el('div', {class: 'titem'}, box, kids);
+}
+
+let roomLoad = 0;
+async function collaborationRoomsCard(qq) {
+  const generation = ++roomLoad;
+  const alive = () => generation === roomLoad && view.qq === qq && view.tab === 'collab';
+  const data = await api(`friend/${qq}/collaboration_rooms`);
+  const title = input({maxlength:'80', placeholder:'协作房间名称'});
+  const detail = el('div', {});
+  const send = body => api(`friend/${qq}/collaboration_rooms`, body);
+  const create = button('新建协作', async () => {await send({action:'create', title:title.value}); if(alive()) await collabPage(qq);});
+  const selector = el('select', {'aria-label':'协作房间'}, ...options(data.rooms.map(room => ({id:room.id, name:room.title})), data.rooms[0]?.id));
+  async function readRoom() {
+    const id = selector.value;
+    if (!id) {detail.replaceChildren(el('p', {class:'muted'}, '新建房间后添加智能体，再选择主智能体分工。')); return;}
+    const value = await api(`friend/${qq}/collaboration_rooms?room_id=${encodeURIComponent(id)}`);
+    if (!alive() || selector.value !== id) return;
+    const room = value.room;
+    const provider = el('select', {'aria-label':'新增成员模型来源'}, ...options(data.providers.map(id => ({id, name:id})), data.providers[0]));
+    const name = input({maxlength:'32', placeholder:'成员名称'}), role = input({maxlength:'180', placeholder:'具体分工'});
+    const change = async body => {await send({room_id:id, ...body}); if(alive()) await readRoom();};
+    const host = el('select', {'aria-label':'主智能体'}, ...options([{id:'', name:'选择主智能体'}, ...room.members.map(member => ({id:member.id, name:member.name}))], room.host_id));
+    const members = room.members.map(member => el('div', {class:'switch'}, el('div', {class:'grow'},
+      el('div', {}, member.name), el('div', {class:'muted'}, member.role)), button('移除', () => change({action:'remove', member_id:member.id}))));
+    const output = el('pre', {'aria-label':'协作执行结果'});
+    function result(latest) {
+      const task = latest.task;
+      const assignments = latest.routing.members || [];
+      output.textContent = (task ? '任务状态：' + (TASK_STATES[task.status] || task.status) + '\n' : '') +
+        assignments.map(member => `${member.name} · ${member.model || '配置模型'} · ${EFFORT_LABELS[member.effort] || member.effort || '工具管理'}：${member.assignment || ''}`).join('\n') +
+        '\n' + (latest.room.messages || []).slice(-12).map(message => `${message.name || '用户'}：${message.content}`).join('\n\n') +
+        (task?.error ? '\n执行未完成：' + task.error : '');
+      return task && ['PENDING','RUNNING','PLANNING','VERIFYING'].includes(task.status);
+    }
+    const poll = async () => {
+      if (!alive() || selector.value !== id || !output.isConnected) return;
+      try {const latest = await api(`friend/${qq}/collaboration_rooms?room_id=${encodeURIComponent(id)}`);
+        if (alive() && selector.value === id && output.isConnected && result(latest)) setTimeout(poll, 4000);
+      } catch(error) {if(alive()) toast(error.message);}
+    };
+    const text = area({'aria-label':'协作任务', maxlength:'4000', placeholder:'明确任务、产物和验收要求'});
+    const pendingKey = `qqdot-collab-request:${qq}:${id}`;
+    let pending = null;
+    try {const saved = JSON.parse(sessionStorage.getItem(pendingKey));
+      if(saved && typeof saved.text === 'string' && /^[a-f0-9]{32}$/.test(saved.request_id)) {pending=saved; text.value=saved.text;}
+    } catch(error) { /* No stored request. */ }
+    const run = button('交给主智能体分工', async () => {
+      if (!room.host_id) throw new Error('请先选择并保存主智能体');
+      if (!text.value.trim()) throw new Error('请先填写协作任务');
+      if (pending && pending.text !== text.value) throw new Error('上一请求结果未确认，请先刷新核对，避免重复执行');
+      if (!pending) pending = {text:text.value, request_id:Array.from(crypto.getRandomValues(new Uint8Array(16)), v=>v.toString(16).padStart(2,'0')).join('')};
+      sessionStorage.setItem(pendingKey, JSON.stringify(pending));
+      try {await send({action:'run', room_id:id, ...pending});}
+      catch(error) {if(error.status >= 400 && error.status < 500) {pending=null; sessionStorage.removeItem(pendingKey);} throw error;}
+      pending = null;
+      sessionStorage.removeItem(pendingKey);
+      if (alive()) {text.value=''; await poll();}
+      return {message:'任务已提交，请查看实际执行与验收结果。'};
+    });
+    detail.replaceChildren(...members, field('主智能体', host), button('保存主智能体', () => change({action:'set_host', member_id:host.value})),
+      field('模型来源', provider), field('成员名称', name), field('具体分工', role),
+      button('添加智能体', () => change({action:'add', provider:provider.value, name:name.value, role:role.value})),
+      field('协作任务', text), run, output);
+    if(result(value)) setTimeout(poll, 4000);
+  }
+  selector.onchange = () => readRoom().catch(error => toast(error.message));
+  await readRoom();
+  return card('主智能体与协作房间', el('div', {class:'muted'}, '当前好友独立管理。主智能体从已配置的模型和思考强度中选择，分工及真实返回结果显示在下方。'),
+    el('div', {class:'row'}, title, create), field('协作房间', selector), detail);
+}
+
+async function collabPage(qq) {
+  const roomCard = await collaborationRoomsCard(qq);
+  const data = await api(`friend/${qq}/collaboration`), sum = data.summary;
+  if (view.qq !== qq || view.tab !== 'collab') return;
+  const agents = data.agents.map(agent => {
+    const [label, cls] = COLLAB_STATUS[agent.status];
+    return el('div', {class: 'switch'}, el('div', {class: 'grow'},
+      el('div', {}, agent.label), el('div', {class: 'muted'}, `${agent.detail} · 发出 ${agent.sent} · 收到 ${agent.received}`),
+      el('div', {class: 'muted'}, '所属：' + (agent.task_title || agent.project))), el('span', {class: 'state ' + cls}, label));
+  });
+  const providers = Object.fromEntries(data.agents.map(agent => [agent.agent_id, agent.lead_provider || agent.provider]));
+  const threads = data.threads.map(thread => {
+    const rows = [collabTree(thread.tree, thread, providers)];
+    return card(thread.title, el('div', {class: 'muted'}, thread.participants.map(item => item.label).join(' ⇄ ')
+      + ` · ${thread.count} 条 · ${clockText(thread.last)}`), ...rows);
+  });
+  const records = agents.length || threads.length ? [card('任务协作记录', el('div', {class: 'muted'}, `已登记 ${sum.agents} · 正在工作 ${sum.active} · 协作 ${sum.threads} 次 · 24 小时内往来 ${sum.messages_24h}`),
+      button('刷新记录', () => collabPage(qq)),
+      el('div', {class: 'muted'}, '派 交接 · 回 交回 · 汇 汇总 · 问 请求 · 审 审查；圆点颜色是做这一步的智能体，小字是状态；点节点展开详情（智能体的输出，只作参考）。'),
+      ...agents), ...threads] : [];
+  show(roomCard, ...records);
+}
+
+// 2026-10-26 user: the friend's voice is heard by a local model or an AI model, switched with one tap
+function voiceInputCard(qq, state) {
+  const names = {local:'本地模型识别', agent:'AI 模型直接听', off:'关闭'};
+  const status = el('div', {class:'muted'});
+  const buttons = {};
+  const tier = el('select', {}, ...options(state.models.map(item => ({id:item.id,
+    name:item.name + (item.installed ? '（已下载）' : '（未下载）')})), state.settings.tier));
+  const agent = el('select', {}, ...options([{id:'auto', name:'自动（好友当前模型能听就用它，否则用 Gemini）'},
+    {id:'antigravity', name:'Antigravity · Gemini'}, {id:'api', name:'自定义 API（需支持音频输入）'}], state.settings.agent));
+  const model = input({value:state.settings.agent_model, maxlength:120, placeholder:'留空：Gemini 用 gemini-3.8-flash-low'});
+  const paint = next => {
+    state = next;
+    for (const key in buttons) buttons[key].className = key === state.settings.mode ? 'primary' : '';
+    const local = state.local_ready ? '本地模型已下载' : '本地模型尚未下载（请在电脑上下载「语音识别」模型）';
+    status.textContent = state.settings.mode === 'off' ? '已关闭：语音只显示为「[语音]」。'
+      : state.settings.mode === 'local' ? '本地模型识别：' + local
+      : (state.agent ? 'AI 模型直接听：' + state.agent_detail : '待处理 · ' + state.agent_detail) + '。失败时备用：' + local;
+  };
+  for (const key of ['local', 'agent', 'off']) {
+    buttons[key] = el('button', {}, names[key]);
+    buttons[key].onclick = () => act(buttons[key], async () => {
+      const result = await api(`friend/${qq}/voice_input`, {mode:key});
+      paint(result.input);
+      return result;
+    });
+  }
+  paint(state);
+  return card('收到 QQ 语音时',
+    el('div', {class:'muted'}, '点按钮立即切换，只对当前好友生效。语音先变成文字（附情绪）再交给回复模型。本地模型不耗额度；AI 模型每条语音多一次调用，由 Gemini 或支持音频的 API 模型来听（Codex、Claude、DeepSeek 不能直接听音频）。'),
+    el('div', {class:'row'}, buttons.local, buttons.agent, buttons.off), status,
+    form([field('本地识别模型', tier), field('听语音的 AI', agent), field('AI 模型名', model)], '保存识别设置',
+      async () => {
+        const result = await api(`friend/${qq}/voice_input`, {tier:tier.value, agent:agent.value, agent_model:model.value});
+        paint(result.input);
+        return result;
+      }));
+}
+
+async function studyPage(qq) {
+  const path = input({placeholder:'电脑默认项目中的相对路径，例如 materials/教材.pdf'});
+  const query = input({placeholder:'要查找的知识点'});
+  const output = el('div', {style:'white-space:pre-wrap;overflow-wrap:anywhere'});
+  const render = data => {
+    const lines = data.status ? [data.status] : [];
+    for (const item of data.materials || []) lines.push('资料：' + item.path);
+    for (const item of data.records || []) lines.push('学习记录：' + item.title);
+    for (const item of data.items || []) lines.push(item.path + ' · ' + item.locator + '\n引用：' + item.id + '\n' + item.text);
+    if (data.note) lines.push(data.note);
+    output.textContent = lines.join('\n\n') || '当前项目还没有资料或相关结果。';
+  };
+  show(card('公共学习资料',
+    el('div', {class:'muted'}, '由当前智能体调用资料、讲解、出题和规划能力，不必切换到专用智能体。这里管理当前好友默认项目。'),
+    path, button('导入资料', async () => render(await api(`friend/${qq}/study_action`, {operation:'import',path:path.value}))),
+    query, button('检索原文', async () => render(await api(`friend/${qq}/study_library?operation=search&query=${encodeURIComponent(query.value)}`))),
+    button('资料与学习记录', async () => render(await api(`friend/${qq}/study_library`))), output));
+  render(await api(`friend/${qq}/study_library`));
+}
+
+async function workflowsPage(qq) {
+  const data = await api(`friend/${qq}/workflows`);
+  const cards = data.workflows.map(flow => {
+    const run = button('执行一次', async () => {const result=await api(`friend/${qq}/workflow`,
+      {action:'run',workflow_id:flow.workflow_id}); await workflowsPage(qq); return result;});
+    const stop = button('停止后续定时执行',async () => {const result=await api(`friend/${qq}/workflow`,
+      {action:'schedule',workflow_id:flow.workflow_id,enabled:false}); await workflowsPage(qq); return result;});
+    return card(flow.title, el('div',{class:'muted'}, `第 ${flow.version} 版 · 已运行 ${flow.run_count} 轮 · `
+      +(flow.enabled ? '定时执行已开启' : '定时执行已关闭')),
+      el('p',{},'授权范围：'+flow.definition.scope), el('p',{},'验收标准：'+flow.definition.criteria),
+      ...flow.definition.steps.map((step,index)=>el('p',{},`${index+1}. ${step.title} · ${step.backend || '沿用当前编排'}`)),
+      flow.error ? el('p',{class:'bad'},flow.error) : null,
+      el('div',{class:'row'},run,stop,button('查看任务与审批',async()=>openTaskDashboardModal(qq))));
+  });
+  show(card('可学习工作流',el('div',{class:'muted'},'在电脑任务中心从已验收任务学习、编辑阶段与纠正、配置周期。'
+    +'这里可以执行和停止后续轮次；当前一轮在任务与审批中暂停、继续或验收。')),
+    ...(cards.length ? cards : [card('',el('div',{class:'muted'},'暂无工作流，请先在电脑上创建或学习一个。'))]));
+}
+
+async function proactivePage(qq) {
+  const [data, settings] = await Promise.all([api(`friend/${qq}/proactive`), api(`friend/${qq}/settings`)]);
+  const output = el('pre', {class: 'muted'}, '使用当前配置的模型生成主动消息预览，不会发送；会消耗模型额度。');
+  const preview = el('button', {class: 'primary'}, '生成预览');
+  preview.onclick = () => act(preview, async () => {
+    output.textContent = '正在生成…';
+    try { const r = await api(`friend/${qq}/preview`, {}); output.textContent = r.messages.map((m, i) => `${i + 1}. ${m}`).join('\n\n') || '本轮未生成消息'; }
+    catch (error) { output.textContent = '预览失败：' + error.message; throw error; }
+  });
+  const pro = settings.proactive;
+  const numbers = {
+    rounds_min: input({type: 'number', inputmode: 'numeric', value: numberText(pro.rounds_min)}),
+    rounds_max: input({type: 'number', inputmode: 'numeric', value: numberText(pro.rounds_max)}),
+    bubbles_min: input({type: 'number', inputmode: 'numeric', value: numberText(pro.bubbles_min)}),
+    bubbles_max: input({type: 'number', inputmode: 'numeric', value: numberText(pro.bubbles_max)}),
+    window_start: input({value: pro.window_start}),
+    window_end: input({value: pro.window_end}),
+    reply_pause_minutes: input({type: 'number', inputmode: 'numeric', value: numberText(pro.reply_pause_minutes)}),
+    unanswered_round_limit: input({type: 'number', inputmode: 'numeric', value: numberText(pro.unanswered_round_limit)}),
+    unanswered_round_pause_minutes: input({type: 'number', inputmode: 'numeric', value: numberText(pro.unanswered_round_pause_minutes)}),
+    continuation_max: input({type: 'number', inputmode: 'numeric', value: numberText(pro.continuation_max)}),
+    agenda_min_gap_minutes: input({type: 'number', inputmode: 'numeric', value: numberText(pro.agenda_min_gap_minutes)}),
+    topic_types: input({value: pro.topic_types})};
+  const careSlots = Object.fromEntries([['morning','早安'], ['lunch','午饭'], ['evening','一天近况'], ['night','晚安']]
+    .map(([key, title]) => {
+      const slot = pro.care[key] || {};
+      const fields = {enabled:el('select', {}, ...options([{id:'1',name:'开启'}, {id:'0',name:'关闭'}], slot.enabled ? '1' : '0')),
+        start:input({type:'time', value:slot.start}), end:input({type:'time', value:slot.end}),
+        count_min:input({type:'number',min:1,max:20,value:slot.count_min}),
+        count:input({type:'number',min:1,max:20,value:slot.count}), instruction:area({value:slot.instruction || ''})};
+      fields.card = card(title, field('是否启用', fields.enabled), field('开始时间', fields.start), field('结束时间', fields.end),
+        field('最少消息数', fields.count_min), field('最多消息数', fields.count), field('关心内容', fields.instruction));
+      return [key, fields];
+    }));
+  const chatFields = [
+    el('div', {class: 'muted'}, '总开关在小屋状态页，这里设置次数、时段和暂停规则。'),
+    field('每日轮数', el('div', {class: 'row'}, numbers.rounds_min, el('span', {class: 'muted'}, '至'), numbers.rounds_max)),
+    field('每轮消息数', el('div', {class: 'row'}, numbers.bubbles_min, el('span', {class: 'muted'}, '至'), numbers.bubbles_max)),
+    field('活跃时段', el('div', {class: 'row'}, numbers.window_start, el('span', {class: 'muted'}, '至'), numbers.window_end)),
+    field('未回复暂停（分钟）', numbers.reply_pause_minutes),
+    field('连续未回复轮数上限', numbers.unanswered_round_limit),
+    field('达到轮数后暂停（分钟）', numbers.unanswered_round_pause_minutes),
+    field('最多追发次数（0 为关闭）', numbers.continuation_max),
+    field('任务最短间隔（分钟）', numbers.agenda_min_gap_minutes),
+    el('div', {class: 'muted'}, '模型在每日轮数与最短间隔范围内，自主规划主动消息和任务时机。'),
+    field('话题类型', numbers.topic_types),
+    el('div', {class:'muted'}, '时段关心是模型自主规划的参考，语气沿用当前好友的人设与回复方式。'),
+    ...Object.values(careSlots).map(slot => slot.card),
+    el('div', {class: 'muted'}, '修改后，可在桌面端点击重新规划，更新今天剩余安排。')];
+  show(card('消息预览', el('div', {class: 'row'}, preview), output),
+       card('主动任务与定时关怀', form(chatFields, '保存设置', () => {
+         const body = {};
+         for (const [key, box] of Object.entries(numbers)) body[key] = box.value;
+         body.care = Object.fromEntries(Object.entries(careSlots).map(([key, slot]) => [key, {
+           enabled:slot.enabled.value === '1', start:slot.start.value, end:slot.end.value,
+           count_min:slot.count_min.value, count:slot.count.value, instruction:slot.instruction.value}]));
+         return api(`friend/${qq}/page_settings`, body);
+       })),
+       card('当前状态与计划', el('pre', {}, data.text)));
+}
+
+async function topicsPage(qq) {
+  const [data, library] = await Promise.all([api(`friend/${qq}/settings`), api(`friend/${qq}/topics`)]);
+  const hours = {normal: input({type: 'number', inputmode: 'numeric', value: numberText(data.research_hours.normal)}),
+                 deep: input({type: 'number', inputmode: 'numeric', value: numberText(data.research_hours.deep)})};
+  const runs = {normal: el('div', {class: 'muted'}), deep: el('div', {class: 'muted'})};
+  for (const kind of ['normal', 'deep']) runs[kind].textContent = researchText(kind, data.research_state[kind]);
+  const researchRow = kind => el('div', {class: 'row'},
+    el('span', {class: 'grow'}, kind === 'normal' ? '日常话题 · 每个话题 1–2 条，30 天后过期' : '深度话题 · 每个话题 3–5 条，长期保留'),
+    el('span', {class: 'muted'}, '每隔 '), hours[kind], el('span', {class: 'muted'}, ' hours (0 = manual only) '),
+    button('立即整理', () => api(`friend/${qq}/research`, {kind, hours: hours[kind].value})));
+  const interests = data.research_state.interests || {};
+  const items = library.items.map(item => {
+    const remove = button('删除资料', async () => { const r = await api(`friend/${qq}/topic_remove`, {id: item.id}); await render(); return r; });
+    return el('details', {}, el('summary', {}, el('span', {class: 'grow'}, item.title), el('span', {class: 'muted'}, item.topic)),
+      el('div', {class: 'muted'}, `发布：${item.published || '—'} · 获取：${(item.fetched_at || '').slice(0, 10)} · 到期：${item.expires_at || '—'}`),
+      el('pre', {}, item.summary || ''), el('div', {class: 'muted', style: 'word-break:break-all'}, '来源：' + (item.url || '')),
+      el('div', {class: 'row'}, el('span', {class: 'grow'}), remove));
+  });
+  show(card('话题资料库', el('div', {class: 'muted'},
+    '兴趣话题：' + ((interests.topics || []).join(', ') || '（暂无，请在好友资料中设置）')
+    + ((interests.deep || []).length ? '；深度：' + interests.deep.join(', ') : '')),
+    researchRow('normal'), runs.normal, researchRow('deep'), runs.deep,
+    el('div', {class: 'muted'}, '正常回复会按需检索；总开关在小屋状态页，思考强度在模型设置中调整。')),
+    card(`资料（${library.items.length} 条）`, ...(items.length ? items : [el('div', {class: 'muted'}, '暂无资料')])));
+}
+
+async function voiceAudio(qq, name, audio) {
+  const response = await fetch(`/api/friend/${qq}/voice_audio?name=${encodeURIComponent(name)}`,
+                                {headers: {'Authorization': 'Bearer ' + token}});
+  if (!response.ok) throw new Error('语音读取失败');
+  audio.src = URL.createObjectURL(await response.blob());
+}
+
+async function stickerImage(qq, key, img) {
+  const response = await fetch(`/api/friend/${qq}/sticker_image?key=${encodeURIComponent(key)}`,
+                               {headers: {'Authorization': 'Bearer ' + token}});
+  if (response.ok) img.src = URL.createObjectURL(await response.blob());
+  else img.alt = '（无预览）';
+}
+
+async function stickersPage(qq) {
+  const data = await api(`friend/${qq}/stickers`);
+  const cards = data.items.map(item => {
+    const img = el('img', {alt: ''});
+    stickerImage(qq, item.key, img).catch(() => {});
+    const source = {user: '手动编辑', codex: 'Codex 草稿', claude: 'Claude 草稿', antigravity: 'Antigravity 草稿', custom: '自定义模型草稿', deepseek: 'DeepSeek 草稿'}[item.card.by] || (item.card.by ? item.card.by + ' 草稿' : '没有描述卡');
+    const edits = {};
+    const fields = Object.entries(data.fields).map(([name, label]) => {
+      edits[name] = input({value: item.card[name] || ''});
+      return field(label, edits[name]);
+    });
+    const save = el('button', {class: 'primary'}, '保存修改');
+    save.onclick = () => act(save, () => {
+      const body = {key: item.key};
+      for (const [name, box] of Object.entries(edits)) body[name] = box.value;
+      return api(`friend/${qq}/sticker`, body);
+    });
+    const remove = button('移出收藏', async () => {
+      if (!confirm('将这张图片移出表情收藏？描述卡也会删除。')) return null;
+      const withQQ = confirm('同时删除机器人 QQ 中的表情收藏？确定则两边都删除，取消则只移出本地。');
+      const r = await api(`friend/${qq}/sticker_remove`, {key: item.key, qq: withQQ});
+      await render();
+      return r;
+    });
+    return card('', el('div', {class: 'sticker'}, img, el('div', {class: 'muted'},
+      `${source} · ${item.qq_saved ? '已收藏到 QQ' : 'QQ 收藏状态未确认'}`
+      + (item.card.is_meme === false ? ' · 已标记为非表情，不推荐用于回复' : ''))),
+      ...fields, el('div', {class: 'row'}, el('span', {class: 'grow'}), remove, save));
+  });
+  const written = data.items.filter(item => item.card && item.card.by).length;
+  show(card('表情收藏', el('div', {class: 'muted'}, `共 ${data.items.length} 张表情，${written} 张描述卡。`
+    + '每张表情都有用于对话匹配的描述卡，手动编辑不会被自动覆盖。'
+    + '批量重新生成描述卡请在桌面端操作。')), ...cards);
+}
+
+async function templatePage(qq) {
+  const data = await api(`friend/${qq}/template`);
+  const note = el('div', {class: 'muted'}, '人格模板包含风格摘要、特征和回复示例索引；在桌面端管理和训练。');
+  const t = data.template;
+  if (!t) return show(card('人格模板', note, el('div', {}, '当前好友未使用人格模板。')));
+  const s = t.style || {};
+  const habits = [s.bubbles_per_reply != null ? `每次约 ${s.bubbles_per_reply} 条消息` : '',
+                  s.median_chars_per_bubble != null ? `每条约 ${s.median_chars_per_bubble} 字` : '',
+                  s.pairs != null ? `已学习 ${s.pairs} 组问答` : ''].filter(Boolean).join(' · ');
+  show(card('人格模板', note),
+       card(t.name, el('div', {class: 'muted'}, `${t.speaker} · ${t.status === 'active' ? '已确认' : '草稿'} · `
+         + (t.size ? `向量索引：${t.size} 条` : '无向量索引（仅示例）') + ` · 回复示例：${t.examples} · 分析模型：${t.model || '—'}`),
+         el('div', {class: 'muted'}, habits),
+         el('h2', {}, '概览'), el('pre', {}, t.summary || '—'),
+         el('h2', {}, '特征'), el('pre', {}, t.traits.map(item => '· ' + item).join('\n') || '—')));
+}
+
+let backgroundLoad = 0;
+async function backgroundPage(qq) {
+  const generation = ++backgroundLoad;
+  const data = await api(`friend/${qq}/background_settings`);
+  if (generation !== backgroundLoad || view.qq !== qq || view.tab !== 'background') return;
+  let revision = data.revision;
+  const rows = data.catalog;
+  const route = data.background_model || {};
+  const provider = el('select', {}, ...options([{id:'', name:'沿用当前聊天模型'},
+    ...rows.map(item => ({id:item.provider, name:item.name}))], route.provider || ''));
+  const model = el('select', {}), effort = el('select', {});
+  function changeEffort(preferred) {
+    const entry = rows.find(item => item.provider === provider.value);
+    const levels = (entry?.models.find(item => item.id === model.value)?.efforts) || [];
+    const chosen = levels.includes(preferred) ? preferred : levels.includes(entry?.default_effort) ? entry.default_effort : levels[0];
+    effort.replaceChildren(...options((levels.length ? levels : ['']).map(id => ({id, name:EFFORT_LABELS[id] || id || '由工具管理'})), chosen || ''));
+    effort.disabled = !levels.length;
+  }
+  function changeProvider(preferredModel, preferredEffort) {
+    const entry = rows.find(item => item.provider === provider.value);
+    const models = entry?.models || [];
+    const chosen = models.some(item => item.id === preferredModel) ? preferredModel : entry?.default_model || '';
+    model.replaceChildren(...options(models.length ? models.map(item => ({id:item.id, name:item.id || '沿用工具配置'})) : [{id:'', name:'沿用当前聊天模型'}], chosen));
+    model.disabled = !entry;
+    changeEffort(preferredEffort);
+  }
+  provider.onchange = () => changeProvider();
+  model.onchange = () => changeEffort();
+  changeProvider(route.model, route.effort);
+  const quota = area({'aria-label':'模型额度用完时的QQ回复', maxlength:'1200'});
+  quota.value = data.quota_reply;
+  const save = el('button', {class:'primary'}, '保存当前好友设置');
+  save.onclick = () => act(save, async () => {
+    if (view.qq !== qq || view.tab !== 'background' || generation !== backgroundLoad) throw new Error('页面已切换，请重新读取当前好友设置');
+    const result = await api(`friend/${qq}/background_settings`, {revision,
+      background_model: provider.value ? {provider:provider.value, model:model.value, effort:effort.value} : {}, quota_reply:quota.value});
+    revision = result.revision;
+    return result;
+  });
+  show(card('后台整理与自动反思', el('div', {class:'muted'}, '当前好友独立配置；用于记忆整理和任务失败反思。反思建议需经实际验收，才能形成已验证经验。'),
+    field('模型来源', provider), field('模型', model), field('思考强度', effort),
+    el('div', {class:'muted'}, '候选来自电脑已保存配置和缓存；反思只使用可关闭工具的纯文本通道。')),
+    card('模型额度用完时的 QQ 回复', el('div', {class:'muted'}, '最多1200字，按原文发给当前好友；留空则不额外回复。'), quota,
+      el('div', {class:'row'}, save, button('重新读取', () => backgroundPage(qq)))));
+}
+
+async function modelPage(qq) {
+  const data = await api(`friend/${qq}/model`);
+  const o = data.options;
+  const list = values => values.map(value => ({id: value, name: EFFORT_LABELS[value] || value}));
+  const provider = el('select', {}, ...options([{id: 'dsh', name: 'DeepSeek Harness（本机账号）'},
+                                                {id: 'claude', name: 'Claude 账号'},
+                                                {id: 'codex', name: 'Codex（默认）'},
+                                                {id: 'antigravity', name: 'Antigravity 命令行'},
+                                                {id: 'custom', name: '自定义 API'}], data.provider));
+  const dshModel = input({value: data.dsh_model, list: 'dsh-models'});
+  const dshEffort = el('select', {}, ...options(list(o.dsh_efforts), data.dsh_effort));
+  const codexModel = el('select', {}, ...options(list(Object.keys(o.codex)), data.codex_model));
+  const codexEffort = el('select', {});
+  const researchEffort = el('select', {});
+  const efforts = () => {
+    const levels = o.codex[codexModel.value] || ['low'];
+    for (const [box, value] of [[codexEffort, codexEffort.value || data.codex_effort], [researchEffort, researchEffort.value || data.research_effort]]) {
+      box.replaceChildren(...options(list(levels), levels.includes(value) ? value : levels.includes('low') ? 'low' : levels[0]));
+    }
+  };
+  codexModel.onchange = efforts;
+  efforts();
+  const toggle = (label, on) => {
+    const box = el('input', {type: 'checkbox'});
+    box.checked = on;
+    return [box, el('label', {class: 'switch'}, el('div', {class: 'grow'}, label), box)];
+  };
+  const [codexFast, codexFastRow] = toggle('快速模式（消耗更多额度）', data.codex_fast);
+  const claudeModel = input({value: data.claude_model, list: 'claude-models'});
+  const claudeEffort = el('select', {}, ...options(list(o.claude_efforts), data.claude_effort));
+  const agModel = input({value: data.antigravity_model, list: 'antigravity-models'});
+  const agEffort = el('select', {}, ...options(list(o.antigravity_efforts), data.antigravity_effort));
+  const protocol = el('select', {}, ...options(list(o.protocols), data.api_protocol));
+  const apiEffort = el('select', {}, ...options(list(o.api_efforts), data.api_effort));
+  const baseUrl = input({value: data.api_base_url, placeholder: o.base_url});
+  const apiModel = input({value: data.model, placeholder: o.api_model});
+  const savedAPIs = data.api_profiles || [];
+  const apiConnection = el('select', {}, ...options(savedAPIs.map(c => ({id:c.api_key_id,
+    name:c.label + ' (' + (c.key_saved?'已保存密钥':'未配置密钥') + ')'})), data.active_api_key_id));
+  function selectedAPI(){
+    const cfg = savedAPIs.find(c=>c.api_key_id===apiConnection.value);
+    if(!cfg)return;
+    protocol.value=cfg.api_protocol;
+    baseUrl.value=cfg.api_base_url;
+    apiModel.value=cfg.model;
+    apiEffort.value=cfg.api_effort;
+  }
+  apiConnection.onchange=selectedAPI;
+  baseUrl.readOnly=true;
+  protocol.disabled=true;
+  const compact = input({type: 'number', inputmode: 'numeric', value: numberText(data.compact_tokens), placeholder: String(o.compact_default)});
+  const recentBudget = input({type: 'number', min: '4000', max: '128000', step: '1000', inputmode: 'numeric', value: numberText(data.recent_chat_char_budget), placeholder: '24000'});
+  const [researchFast, researchFastRow] = toggle('话题整理使用快速模式', data.research_fast);
+  const fields = [
+    field('模型来源', provider),
+    el('h2', {}, 'DeepSeek Harness'), field('模型', dshModel), field('思考强度', dshEffort),
+    el('datalist', {id: 'dsh-models'}, ...o.dsh_models.map(name => el('option', {value: name}))),
+    el('div', {class: 'muted'}, '使用本机 DeepSeek Harness 桌面客户端，或已配置的 API 密钥。'),
+    el('h2', {}, 'Codex'), field('模型', codexModel), field('思考强度', codexEffort), codexFastRow,
+    el('div', {class: 'muted'}, '从直接回复到更深入思考，思考越深入，耗时通常越长。'),
+    el('h2', {}, 'Claude 账号'), field('模型', claudeModel), field('思考强度', claudeEffort),
+    el('datalist', {id: 'claude-models'}, ...o.claude_models.map(name => el('option', {value: name}))),
+    el('div', {class: 'muted'}, '使用已授权的 Claude Code 账号，可填写 opus、sonnet 或 haiku 模型标识。'),
+    el('h2', {}, 'Antigravity 命令行'), field('模型', agModel), field('思考强度', agEffort),
+    el('datalist', {id: 'antigravity-models'}, ...o.antigravity_models.map(name => el('option', {value: name}))),
+    el('div', {class: 'muted'}, '使用已登录的 Antigravity 命令行进行聊天、识图和工具执行。'),
+    el('h2', {}, '自定义 API'), field('已保存的 API 连接', apiConnection), field('协议（电脑端管理）', protocol), field('服务地址', baseUrl), field('模型', apiModel), field('思考强度', apiEffort),
+    el('div', {class: 'muted'}, 'API 地址、协议和加密密钥在电脑端管理；这里可以调整模型与思考强度。'),
+    el('h2', {}, '上下文窗口'), field('自动压缩阈值（词元）', compact),
+    el('div', {class: 'muted'}, `默认 ${o.compact_default}，用于会话压缩；每次请求的历史预算另行设置。`),
+    field('无状态 API 历史预算（字符）', recentBudget),
+    el('div', {class: 'muted'}, '默认 24000，范围 4000–128000。用于 API 对话历史，当前轮不会截断，旧消息仍保留并可检索。'),
+    el('h2', {}, '话题整理模型'), field('思考强度', researchEffort), researchFastRow,
+    el('div', {class: 'muted'}, '只用于联网话题整理；切换模型不会删除聊天、记忆和回复风格。')];
+  const usage = el('pre', {class: 'muted'}, '点击读取用量，查看 Codex 输入、输出、缓存词元和估算费用。');
+  show(card('回复生成模型', form(fields, '保存模型设置', () => api(`friend/${qq}/model`, {
+         provider: provider.value, dsh_model: dshModel.value, dsh_effort: dshEffort.value,
+         codex_model: codexModel.value, codex_effort: codexEffort.value, codex_fast: codexFast.checked,
+         claude_model: claudeModel.value, claude_effort: claudeEffort.value, api_protocol: protocol.value,
+         antigravity_model: agModel.value, antigravity_effort: agEffort.value,
+         api_base_url: baseUrl.value, api_key_id: apiConnection.value, model: apiModel.value, api_effort: apiEffort.value, compact_tokens: compact.value,
+         recent_chat_char_budget: recentBudget.value,
+         research_effort: researchEffort.value, research_fast: researchFast.checked}))),
+       card('Codex 额度与用量', usage, el('div', {class: 'row'}, button('读取用量', async () => {
+         usage.textContent = '正在读取用量…';
+         usage.textContent = (await api(`friend/${qq}/usage`)).text;
+         return null;
+       }))));
+}
+
+async function emotionPage(qq) {
+  const label = value => ({uncertain:'不确定',calm:'平静',happy:'开心',surprised:'惊讶',sad:'难过',angry:'生气',annoyed:'烦躁',rule:'规则判断',model:'模型判断'})[value] || value;
+  const data = await api(`friend/${qq}/emotion?limit=${emotionLimit}`);
+  const s = data.state, stamp = s.updated_at ? new Date(s.updated_at * 1000).toLocaleString('zh-CN', {month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'}) : '';
+  let current = '当前：好友中性 · 角色平静\n暂无情绪记录';
+  if (stamp && data.stale) current = `按规则恢复：好友中性 · 角色平静\n上次识别：${stamp}（已过期）`;
+  else if (stamp) current = `当前：好友 ${label(s.user || '中性')} · 角色 ${label(s.self || '平静')}\n`
+    + (s.self_intensity != null ? `情绪强度：${s.self_intensity}/100\n` : '')
+    + (s.self_reason ? `原因：${s.self_reason}\n` : '') + `上次识别：${stamp}`;
+  const lines = data.rows.map(item => `${(item.created_at || '').slice(5, 16).replace('T', ' ')}  ${label(item.source)}：好友 ${label(item.user_label)} · 角色 ${label(item.self_label)}`
+    + (item.self_intensity != null ? ` (${item.self_intensity}/100) ` : '') + (item.self_reason ? `\n  ${item.self_reason}` : ''));
+  const older = el('button', {}, '加载更早记录');
+  older.onclick = () => { emotionLimit += 100; render().catch(error => toast(error.message)); };
+  const moodOn = el('select', {}, el('option', {value: '1'}, '开启'), el('option', {value: '0'}, '关闭'));
+  moodOn.value = data.mood.ignored_mood_enabled ? '1' : '0';
+  const moodAfter = input({type: 'number', inputmode: 'numeric', value: numberText(data.mood.ignored_mood_after)});
+  const moodFields = [
+    field('未回复时的情绪反馈', el('div', {class: 'row'}, moodOn, el('span', {class: 'muted'}, '连续 '), moodAfter,
+          el('span', {class: 'muted'}, ' consecutive unanswered rounds'))),
+    el('div', {class: 'muted'}, '连续多轮主动消息未获回复时，按当前人设表达适度情绪。')];
+  show(card('情绪记录', el('pre', {}, current)),
+       card('未回复情绪触发', form(moodFields, '保存', () => api(`friend/${qq}/mood`,
+         {ignored_mood_enabled: moodOn.value, ignored_mood_after: moodAfter.value}))),
+       card('', el('pre', {}, lines.join('\n') || '历史情绪从更新后开始记录，旧版只保存当前状态。'), el('div', {class: 'row'}, el('span', {class: 'grow'}), older)));
+}
+
+// Current input: what the model received, slot by slot in fixed order
+const PLACES = {'header': '开头说明', 'rules': '1 规则', 'persona': '2 人设与风格', 'interlocutor': '3 好友资料', 'recent': '4 最近上下文',
+                'knowledge': '5 检索资料', 'examples': '6 回复示例', 'chat': '7 摘要与对话', 'notes': '8 作者备注', 'task': '9 当前任务'};
+
+function inputCards(title, data) {
+  const blocks = data.blocks.map(item => el('details', {},
+    el('summary', {}, el('span', {class: 'grow'}, `${PLACES[item.slot] || item.slot} · ${item.title}`), el('span', {class: 'muted'}, `${item.chars} 字符`)),
+    el('div', {class: 'muted'}, `来源：${item.source || '—'} · ${item.kind}`), el('pre', {}, item.text)));
+  const present = new Set(data.blocks.map(item => item.slot));
+  const absent = Object.keys(PLACES).filter(slot => slot !== 'header' && !present.has(slot)).map(slot => PLACES[slot]);
+  const sent = el('details', {}, el('summary', {}, el('span', {class: 'grow'}, '实际发送内容'), el('span', {class: 'muted'}, `${data.sent_chars} 字符`)),
+                  el('pre', {}, data.sent));
+  return card(title, el('div', {class: 'muted'}, data.chars ? `完整提示：${data.chars} 字符 · 实际发送：${data.sent_chars} 字符` : '暂无生成记录。'),
+              data.chars && absent.length ? el('div', {class: 'muted'}, '本轮未包含：' + absent.join(', ')) : null,
+              data.conflicts.length ? el('div', {class: 'bad'}, '指令冲突：' + data.conflicts.join('; ')) : null,
+              ...blocks, data.chars ? sent : null);
+}
+
+function retrievalText(searches) {
+  const lines = [];
+  for (const search of searches) {
+    if (search.tool) lines.push(`[${search.label}] 查询：${search.query} (${search.status || '状态未知'})`);
+    else lines.push(`[${search.label || '检索'}] 查询：${search.query} 候选数：${search.pool}`
+      + (search.reranked ? '，已重排' : '，未重排') + `，丢弃：${search.dropped}`);
+    for (const [text, score] of search.hits) lines.push(`  ${score == null ? '—' : score.toFixed(3)}  ${text}`);
+  }
+  return lines.join('\n') || '本轮未执行向量或关键词检索。';
+}
+
+async function contextPage(qq) {
+  const data = await api(`friend/${qq}/context`);
+  const records = el('select', {}, ...data.records.map(r => el('option', {value: r.id},
+    `#${r.id} ${r.time.slice(5, 16).replace('T', ' ')} ${r.mode} ${r.chars} 字符` + (r.ms ? ` ${(r.ms / 1000).toFixed(1)}s` : '')
+    + ` 已发送：${r.delivered}` + (r.error ? ' 错误' : ''))));
+  const detail = el('div', {});
+  const open = button('查看本轮', async () => {
+    if (!records.value) return null;
+    const r = await api(`friend/${qq}/record?id=${records.value}`);
+    detail.replaceChildren(card('模型输出', el('pre', {}, r.output || '本轮暂无输出记录。')),
+                           card('检索命中', el('pre', {}, retrievalText(r.retrieval))),
+                           inputCards(`#${r.id} ${r.mode} 输入`, r));
+    return null;
+  });
+  show(card('最近生成输入', el('div', {class: 'muted'}, (data.mode ? `${data.mode} · ${data.time.slice(0, 19).replace('T', ' ')} · ` : '')
+         + '上下文按固定顺序组合；缓存块可减少重复发送。')),
+       inputCards('上下文分块（展开查看）', data),
+       card('生成记录', el('div', {class: 'muted'}, '保留最近 300 次输入、检索命中与生成结果。'),
+            data.records.length ? records : el('div', {class: 'muted'}, '暂无'), el('div', {class: 'row'}, open)),
+       detail);
+}
+
+// ---------- Mobile Adaptation: Agent Console UI ----------
+let currentAgentWs = 'default';
+let currentAgentSid = 'session_main';
+let agentConfigData = null;
+let isGenerating = false;
+
+async function agentPage(qq) {
+  const [wsData, cfgData] = await Promise.all([
+    api(`friend/${qq}/agent_workspaces`),
+    api(`friend/${qq}/agent_config`)
+  ]);
+  agentConfigData = cfgData;
+  currentAgentWs = wsData.active_id || 'default';
+
+  const sessData = await api(`friend/${qq}/agent_sessions?ws_id=${encodeURIComponent(currentAgentWs)}`);
+  if (!sessData.sessions || sessData.sessions.length === 0) {
+    currentAgentSid = 'session_main';
+  } else if (!sessData.sessions.some(s => s.id === currentAgentSid) && currentAgentSid !== '__qq_stream__') {
+    currentAgentSid = sessData.active_id || sessData.sessions[0].id;
+  }
+
+  await renderAgentConsole(qq, wsData, sessData);
+}
+
+async function renderAgentConsole(qq, wsData, sessData) {
+  let sessionData = {messages: []};
+  try {
+    sessionData = await api(`friend/${qq}/agent_session?ws_id=${encodeURIComponent(currentAgentWs)}&sid=${encodeURIComponent(currentAgentSid)}`);
+  } catch (e) {
+    sessionData = {messages: []};
+  }
+
+  // 1. Topbar: Workspace & Session selector
+  const wsList = wsData.workspaces && wsData.workspaces.length ? wsData.workspaces : [{id: 'default', title: '默认项目'}];
+  const wsOptions = wsList.length ? wsList.map(w => el('option', Object.assign({value: w.id}, w.id === currentAgentWs ? {selected: 'selected'} : {}), w.title)) : [el('option', {value: currentAgentWs || 'default'}, '默认工作区')];
+  const wsSelect = el('select', {class: 'agent-select', 'aria-label': '工作区'}, ...wsOptions);
+  wsSelect.onchange = async () => {
+    await api(`friend/${qq}/agent_workspace`, {action: 'switch', ws_id: wsSelect.value});
+    currentAgentWs = wsSelect.value;
+    const newSess = await api(`friend/${qq}/agent_sessions?ws_id=${encodeURIComponent(currentAgentWs)}`);
+    currentAgentSid = newSess.active_id || (newSess.sessions[0] ? newSess.sessions[0].id : 'session_main');
+    await renderAgentConsole(qq, wsData, newSess);
+  };
+
+  const sessions = sessData.sessions && sessData.sessions.length ? sessData.sessions : [{id: 'session_main', title: '主会话'}];
+  const sessOptions = [
+    el('option', Object.assign({value: '__qq_stream__'}, currentAgentSid === '__qq_stream__' ? {selected: 'selected'} : {}), 'QQ 实时消息'),
+    ...sessions.map(s => el('option', Object.assign({value: s.id}, s.id === currentAgentSid ? {selected: 'selected'} : {}), s.title || '未命名会话'))
+  ];
+  const sessSelect = el('select', {class: 'agent-select', 'aria-label': '会话'}, ...sessOptions);
+  sessSelect.onchange = async () => {
+    currentAgentSid = sessSelect.value;
+    await renderAgentConsole(qq, wsData, sessData);
+  };
+
+  const newSessBtn = el('button', {class: 'agent-icon-btn', title: '新建会话'}, '+ 新建');
+  newSessBtn.onclick = async () => {
+    const title = prompt('请输入会话标题：', '新建会话');
+    if (title === null) return;
+    const res = await api(`friend/${qq}/agent_session_create`, {ws_id: currentAgentWs, title: title.trim() || '新建会话'});
+    const newSess = await api(`friend/${qq}/agent_sessions?ws_id=${encodeURIComponent(currentAgentWs)}`);
+    currentAgentSid = res.session ? res.session.id : (newSess.sessions[0] ? newSess.sessions[0].id : 'session_main');
+    await renderAgentConsole(qq, wsData, newSess);
+  };
+
+  const clearBtn = el('button', {class: 'agent-icon-btn', title: '清空会话'}, '清空');
+  clearBtn.onclick = async () => {
+    if (currentAgentSid === '__qq_stream__') {
+      toast('QQ 实时消息来自聊天记录，不能在此清空。');
+      return;
+    }
+    if (!confirm('清空当前会话的全部消息？')) return;
+    await api(`friend/${qq}/agent_session_clear`, {ws_id: currentAgentWs, sid: currentAgentSid});
+    toast('会话已清空');
+    await renderAgentConsole(qq, wsData, sessData);
+  };
+
+  const taskBtn = el('button', {class: 'agent-icon-btn', title: '任务与审批', style: 'background: rgba(79, 70, 229, 0.1); color: var(--primary); font-weight: 600;'}, '任务与审批');
+  taskBtn.onclick = () => openTaskDashboardModal(qq);
+
+  const topbar = el('div', {class: 'agent-topbar'}, wsSelect, sessSelect, newSessBtn, clearBtn, taskBtn);
+
+  // 2. Model & Effort Pill
+  const pillBadge = el('span', {class: 'agent-pill-badge'}, agentConfigData.model || '默认模型');
+  const effortObj = (agentConfigData.efforts || []).find(e => e.id === agentConfigData.effort);
+  const effortName = EFFORT_LABELS[agentConfigData.effort] || (effortObj ? effortObj.name : '低');
+  const pillEffort = el('span', {class: 'agent-pill-effort'}, `思考强度：${effortName}`);
+  const pillInfo = el('div', {class: 'agent-pill-info'}, pillBadge, pillEffort);
+  const pillArrow = el('span', {class: 'muted'}, '设置 ⌄');
+  const modelPill = el('div', {class: 'agent-pill'}, pillInfo, pillArrow);
+  modelPill.onclick = () => openModelSelectorModal(qq, async () => {
+    const updatedCfg = await api(`friend/${qq}/agent_config`);
+    agentConfigData = updatedCfg;
+    await renderAgentConsole(qq, wsData, sessData);
+  });
+
+  // 2.5 Active Tasks & Approvals Banner
+  const taskBanner = el('div', {id: 'agent-task-banner', style: 'margin-bottom: 10px;'});
+  (async () => {
+    try {
+      const apprData = await api(`friend/${qq}/agent_approvals`);
+      const taskData = await api(`friend/${qq}/agent_tasks?status=RUNNING`);
+      taskBanner.replaceChildren();
+
+      // Render Approvals first (Urgent)
+      for (const a of (apprData.approvals || [])) {
+        const itemCard = el('div', {class: 'card', style: 'background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); padding: 12px; margin-bottom: 8px; border-radius: 12px;'},
+          el('div', {style: 'display:flex; justify-content:space-between; align-items:center;'},
+            el('span', {style: 'font-weight:600; color: #dc2626; font-size: 13px;'}, `待处理 · 待审批的敏感操作 (${a.category})`),
+            el('span', {class: 'muted', style: 'font-size: 11px;'}, a.req_id)
+          ),
+          el('div', {style: 'font-size: 13px; margin: 6px 0; color: var(--on-surface);'}, a.description),
+          el('div', {style: 'display:flex; gap: 8px; justify-content:flex-end; margin-top: 8px;'},
+            el('button', {class: 'agent-icon-btn', style: 'color: #dc2626;', onclick: async () => {
+              await api(`friend/${qq}/agent_approval_decision`, {req_id: a.req_id, decision: 'reject'});
+              toast('已拒绝敏感操作');
+              renderAgentConsole(qq, wsData, sessData);
+            }}, '拒绝 拒绝'),
+            el('button', {class: 'agent-icon-btn', style: 'color: var(--primary); font-weight:600;', onclick: async () => {
+              await api(`friend/${qq}/agent_approval_decision`, {req_id: a.req_id, decision: 'approve', allowed_scope: 'task'});
+              toast('已对当前任务授权');
+              renderAgentConsole(qq, wsData, sessData);
+            }}, '允许本任务'),
+            el('button', {class: 'primary', style: 'min-height: 32px; padding: 0 12px; font-size: 12px;', onclick: async () => {
+              await api(`friend/${qq}/agent_approval_decision`, {req_id: a.req_id, decision: 'approve', allowed_scope: 'once'});
+              toast('已允许单次执行');
+              renderAgentConsole(qq, wsData, sessData);
+            }}, '允许一次')
+          )
+        );
+        taskBanner.append(itemCard);
+      }
+
+      // Render Active Running Tasks
+      for (const t of (taskData.tasks || [])) {
+        const tCard = el('div', {class: 'card', style: 'background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); padding: 10px 12px; margin-bottom: 8px; border-radius: 12px; display:flex; justify-content:space-between; align-items:center;'},
+          el('div', {},
+            el('div', {style: 'font-weight:600; font-size:13px; color: #059669;'}, `正在执行：${t.title}`),
+            el('div', {class: 'muted', style: 'font-size:11px; margin-top:2px;'}, `${t.category} · 重试 ${t.retry_count}/${t.max_retries}`)
+          ),
+          el('div', {style: 'display:flex; gap:6px;'},
+            el('button', {class: 'agent-icon-btn', onclick: async () => {
+              await api(`friend/${qq}/agent_task_action`, {action: 'pause', task_id: t.task_id});
+              toast('任务已暂停');
+              renderAgentConsole(qq, wsData, sessData);
+            }}, '暂停'),
+            el('button', {class: 'agent-icon-btn', style: 'color:#dc2626;', onclick: async () => {
+              await api(`friend/${qq}/agent_task_action`, {action: 'cancel', task_id: t.task_id});
+              toast('任务已取消');
+              renderAgentConsole(qq, wsData, sessData);
+            }}, '取消')
+          )
+        );
+        taskBanner.append(tCard);
+      }
+    } catch (e) {}
+  })();
+
+  // 3. Messages Stream
+  const msgList = el('div', {class: 'agent-msg-list'});
+  const msgs = sessionData.messages || [];
+  if (msgs.length === 0) {
+    msgList.append(el('div', {class: 'card', style: 'text-align:center; padding: 28px 16px; color: var(--on-surface-variant);'},
+      el('div', {style: 'width:44px;height:44px;border-radius:50%;background:#dbeafe;color:#1d4ed8;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-weight:700;font-size:14px;'}, 'AI'),
+      el('div', {style: 'font-weight: 500; font-size: 15px; color: var(--on-surface);'}, '智能体工作台已就绪'),
+      el('div', {class: 'muted', style: 'margin-top: 4px;'}, '输入任务指令即可提交执行，也可以切换到直接对话。')
+    ));
+  } else {
+    for (const m of msgs) {
+      if (m.role === 'user') {
+        const uBubble = el('div', {class: 'bubble me'}, m.content);
+        msgList.append(uBubble);
+      } else {
+        const header = el('div', {class: 'agent-msg-header'},
+          el('span', {style: 'font-weight: 600; color: var(--primary);'}, 'AI · ' + (m.agent_name || (sessionData.is_qq ? '好友' : '智能体'))),
+          el('span', {}, (m.timestamp ? m.timestamp.slice(11, 16) : ''))
+        );
+        const children = [header];
+        if (m.thinking) {
+          const summary = el('summary', {}, `思考过程（${m.thinking.length} 字符）· 点击展开`);
+          const pre = el('pre', {}, m.thinking);
+          children.push(el('details', {class: 'thought-card'}, summary, pre));
+        }
+        children.push(el('div', {class: 'agent-msg-body'}, m.content));
+        msgList.append(el('div', {class: 'agent-msg-assistant'}, ...children));
+      }
+    }
+  }
+
+  // Generating card placeholder
+  const generatingCard = el('div', {class: 'generating-card', id: 'agent-gen-card', style: isGenerating ? '' : 'display:none;'},
+    el('span', {style: 'font-size: 18px;'}, 'AI'),
+    el('span', {}, '智能体正在分析上下文、检索记忆并生成回复…')
+  );
+  msgList.append(generatingCard);
+
+  // 4. Input Dock
+  const quickQq = el('div', {class: 'chip' + (currentAgentSid === '__qq_stream__' ? ' active' : '')}, 'QQ 实时消息');
+  quickQq.onclick = async () => {
+    currentAgentSid = '__qq_stream__';
+    await renderAgentConsole(qq, wsData, sessData);
+  };
+  const quickNew = el('div', {class: 'chip'}, '+ 新建会话');
+  quickNew.onclick = newSessBtn.onclick;
+  const quickClear = el('div', {class: 'chip'}, '/clear 清空');
+  quickClear.onclick = clearBtn.onclick;
+
+  const chipsRow = el('div', {class: 'agent-dock-chips'}, quickQq, quickNew, quickClear);
+  const inputMode = el('select', {title: '工作台输入方式'},
+    el('option', {value: 'task'}, '执行任务'), el('option', {value: 'chat'}, '直接对话'));
+  inputMode.style.display = currentAgentSid === '__qq_stream__' ? 'none' : '';
+  chipsRow.appendChild(inputMode);
+
+  const inputBox = el('textarea', {placeholder: currentAgentSid === '__qq_stream__' ? '向好友发送 QQ 消息…' : '输入要执行的任务，或切换到直接对话…'});
+  const sendBtn = el('button', {class: 'primary'}, '发送');
+
+  const doSend = async () => {
+    const text = inputBox.value.trim();
+    if (!text || isGenerating) return;
+    inputBox.value = '';
+
+    msgList.insertBefore(el('div', {class: 'bubble me'}, text), generatingCard);
+    isGenerating = true;
+    generatingCard.style.display = 'flex';
+    sendBtn.disabled = true;
+    window.scrollTo(0, document.body.scrollHeight);
+
+    try {
+      const res = await api(`friend/${qq}/agent_send`, {
+        ws_id: currentAgentWs,
+        sid: currentAgentSid,
+        text: text,
+        provider: agentConfigData.provider,
+        model: agentConfigData.model,
+        effort: agentConfigData.effort,
+        mode: inputMode.value
+      });
+
+      isGenerating = false;
+      generatingCard.style.display = 'none';
+
+      const header = el('div', {class: 'agent-msg-header'},
+        el('span', {style: 'font-weight: 600; color: var(--primary);'}, 'AI · ' + (res.agent_name || (res.is_qq ? '我（QQ）' : '智能体'))),
+        el('span', {}, '刚刚')
+      );
+      const children = [header];
+      if (res.thinking) {
+        const summary = el('summary', {}, `思考过程（${res.thinking.length} 字符）· 点击展开`);
+        const pre = el('pre', {}, res.thinking);
+        children.push(el('details', {class: 'thought-card'}, summary, pre));
+      }
+      children.push(el('div', {class: 'agent-msg-body'}, res.reply || ''));
+      msgList.insertBefore(el('div', {class: 'agent-msg-assistant'}, ...children), generatingCard);
+      window.scrollTo(0, document.body.scrollHeight);
+    } catch (err) {
+      isGenerating = false;
+      generatingCard.style.display = 'none';
+      toast('执行失败：' + err.message);
+    } finally {
+      sendBtn.disabled = false;
+    }
+  };
+
+  sendBtn.onclick = doSend;
+  inputBox.onkeydown = (e) => {
+    if (e.key === '回车' && !e.shiftKey) {
+      e.preventDefault();
+      doSend();
+    }
+  };
+
+  const inputRow = el('div', {class: 'agent-input-row'}, inputBox, sendBtn);
+  const dockInner = el('div', {class: 'agent-dock-inner'}, chipsRow, inputRow);
+  const dock = el('div', {class: 'agent-dock'}, dockInner);
+
+  const wrap = el('div', {class: 'agent-wrap'}, topbar, modelPill, taskBanner, msgList, dock);
+  show(wrap);
+}
+
+function openModelSelectorModal(qq, onSave) {
+  const modal = el('div', {class: 'modal-overlay'});
+  const cfg = agentConfigData;
+
+  const provSelect = el('select', {class: 'agent-select', style: 'width: 100%; min-height: 44px; margin-bottom: 12px; font-weight: 500;'},
+    ...(cfg.providers || []).map(p => el('option', Object.assign({value: p.id}, p.id === cfg.provider ? {selected: 'selected'} : {}), p.name))
+  );
+
+  const modelSelect = el('select', {class: 'agent-select', style: 'width: 100%; min-height: 44px; margin-bottom: 12px;'});
+  const effortSelect = el('select', {class: 'agent-select', style: 'width: 100%; min-height: 44px; margin-bottom: 16px;'});
+
+  const updateModels = (prov) => {
+    let list = [];
+    if (prov === cfg.provider) {
+      list = [...(cfg.main_models || []), ...(cfg.overflow_models || [])];
+    } else {
+      if (prov === 'claude') {
+        list = [{id: 'claude-opus-5-5', name: 'Opus 5.5'}, {id: 'claude-sonnet-5-5', name: 'Sonnet 5.5'}, {id: 'claude-haiku-5-5', name: 'Haiku 5.5'}];
+      } else if (prov === 'dsh') {
+        list = [{id: 'DeepSeek-V41-Flash', name: 'DeepSeek-V41-Flash'}, {id: 'DeepSeek-V4-Pro', name: 'DeepSeek-V4-Pro'}];
+      } else if (prov === 'antigravity') {
+        list = [{id: 'gemini-3.8-flash-high', name: 'Gemini 3.8 Flash High'}, {id: 'gemini-3.8-flash-medium', name: 'Gemini 3.8 Flash Medium'}, {id: 'gemini-3.8-flash-low', name: 'Gemini 3.8 Flash Low'}];
+      } else if (prov === 'custom') {
+        list = [{id: 'deepseek-chat', name: 'DeepSeek V3'}, {id: 'deepseek-reasoner', name: 'DeepSeek R1'}, {id: 'gpt-4o', name: 'GPT-4o'}];
+      } else if (['opencode', 'cursor', 'qwen_code', 'kimi_code', 'acp'].includes(prov)) {
+        list = [{id: '沿用工具配置', name: '沿用工具配置'}];
+      } else {
+        list = [{id: 'gpt-6.1-sol', name: 'GPT-6.1 Sol'}, {id: 'gpt-6-astra', name: 'GPT-6 Astra'}, {id: 'gpt-6-luna', name: 'GPT-6 Luna'}];
+      }
+    }
+    modelSelect.replaceChildren(...list.map(m => el('option', Object.assign({value: m.id}, m.id === cfg.model ? {selected: 'selected'} : {}), m.name)));
+    updateEfforts(prov, modelSelect.value);
+  };
+
+  const updateEfforts = (prov, modelId) => {
+    const m = (modelId || '').toLowerCase();
+    let efforts = [];
+    if (['opencode', 'cursor', 'qwen_code', 'kimi_code', 'acp'].includes(prov)) {
+      efforts = [{id: '沿用工具配置', name: '沿用工具配置'}];
+    } else if (prov === 'antigravity' || m.includes('gemini')) {
+      efforts = [{id: 'off', name: '关闭'}, {id: 'low', name: '低'}, {id: 'medium', name: '中'}, {id: 'high', name: '高'}];
+    } else if (prov === 'dsh' || m.includes('deepseek')) {
+      if (m.includes('flash') || m.includes('v41')) {
+        efforts = [{id: 'off', name: '关闭'}, {id: 'low', name: '低'}, {id: 'medium', name: '中'}, {id: 'high', name: '高'}];
+      } else {
+        efforts = [{id: 'off', name: '关闭'}, {id: 'low', name: '低'}, {id: 'medium', name: '中'}, {id: 'high', name: '高'}, {id: 'max', name: '最高（深入）'}];
+      }
+    } else if (prov === 'claude') {
+      efforts = [{id: 'off', name: '关闭'}, {id: 'low', name: '低'}, {id: 'medium', name: '中'}, {id: 'high', name: '高'}, {id: 'max', name: '最高'}];
+    } else {
+      efforts = [{id: 'none', name: '不思考（关闭）'}, {id: 'low', name: '低'}, {id: 'medium', name: '中'}, {id: 'high', name: '高'}, {id: 'max', name: '最高'}, {id: 'ultra', name: '极高'}];
+    }
+    effortSelect.replaceChildren(...efforts.map(e => el('option', Object.assign({value: e.id}, e.id === cfg.effort ? {selected: 'selected'} : {}), e.name)));
+  };
+
+  provSelect.onchange = () => updateModels(provSelect.value);
+  modelSelect.onchange = () => updateEfforts(provSelect.value, modelSelect.value);
+  updateModels(provSelect.value);
+
+  const saveBtn = el('button', {class: 'primary', style: 'flex: 1;'}, '保存并切换');
+  saveBtn.onclick = async () => {
+    saveBtn.disabled = true;
+    try {
+      await api(`friend/${qq}/agent_config`, {
+        provider: provSelect.value,
+        model: modelSelect.value,
+        effort: effortSelect.value
+      });
+      toast('智能体模型与思考强度已更新');
+      if (onSave) await onSave(); else await render();
+    } catch (err) {
+      toast('保存失败：' + err.message);
+    } finally {
+      saveBtn.disabled = false;
+    }
+  };
+
+  const cancelBtn = el('button', {style: 'flex: 1;'}, '返回');
+  cancelBtn.onclick = () => render();
+
+  show(card('智能体模型与思考设置',
+    el('div', {class: 'muted', style: 'margin-bottom: 6px;'}, '这里的修改与电脑端控制台共用同一份好友配置，保存后桌面端下次读取会同步。'),
+    el('div', {class: 'muted', style: 'margin-bottom: 6px;'}, '智能体来源'),
+    provSelect,
+    el('div', {class: 'muted', style: 'margin-bottom: 6px;'}, '模型标识'),
+    modelSelect,
+    el('div', {class: 'muted', style: 'margin-bottom: 6px;'}, '思考强度'),
+    effortSelect,
+    el('div', {class: 'row', style: 'gap: 12px; margin-top: 14px;'}, cancelBtn, saveBtn)
+  ));
+}
+
+async function openTaskDashboardModal(qq) {
+  const modal = el('div', {class: 'modal-overlay'});
+  let currentTab = 'tasks'; // 'tasks', 'approvals', 'new'
+
+  const contentBox = el('div', {style: 'margin-top: 12px;'});
+
+  const renderContent = async () => {
+    contentBox.replaceChildren(el('div', {style: 'text-align:center; padding: 20px; color: var(--on-surface-variant);'}, '正在加载…'));
+    try {
+      if (currentTab === 'tasks') {
+        const res = await api(`friend/${qq}/agent_tasks`);
+        const tasks = res.tasks || [];
+        contentBox.replaceChildren();
+
+        if (tasks.length === 0) {
+          contentBox.append(el('div', {class: 'card', style: 'text-align:center; padding:24px; color:var(--on-surface-variant);'}, '暂无进行中的任务'));
+          return;
+        }
+
+        for (const t of tasks) {
+          const statusColors = {
+            RUNNING: '#10b981', PENDING: '#6366f1', COMPLETED: '#059669',
+            WAITING_APPROVAL: '#f59e0b', WAITING_RESOURCE: '#d97706',
+            PAUSED: '#6b7280', FAILED: '#ef4444', CANCELLED: '#9ca3af'
+          };
+          const badgeColor = statusColors[t.status] || '#6366f1';
+
+          const cardHeader = el('div', {style: 'display:flex; justify-content:space-between; align-items:center;'},
+            el('span', {style: 'font-weight:600; font-size:14px; color:var(--on-surface);'}, t.title),
+            el('span', {style: `background: ${badgeColor}20; color: ${badgeColor}; padding: 2px 8px; border-radius: 6px; font-size:11px; font-weight:600;`}, TASK_STATES[t.status] || t.status)
+          );
+
+          const desc = el('div', {class: 'muted', style: 'font-size:12px; margin: 4px 0 8px; max-height: 40px; overflow:hidden; text-overflow:ellipsis;'}, t.description);
+
+          const actions = el('div', {style: 'display:flex; gap: 8px; justify-content:flex-end; margin-top:8px;'});
+
+          if (t.status === 'RUNNING' || t.status === 'PENDING') {
+            actions.append(el('button', {class: 'agent-icon-btn', onclick: async () => {
+              await api(`friend/${qq}/agent_task_action`, {action: 'pause', task_id: t.task_id});
+              toast('已暂停');
+              renderContent();
+            }}, '暂停'));
+            actions.append(el('button', {class: 'agent-icon-btn', style: 'color:#dc2626;', onclick: async () => {
+              await api(`friend/${qq}/agent_task_action`, {action: 'cancel', task_id: t.task_id});
+              toast('已取消');
+              renderContent();
+            }}, '取消'));
+          } else if (t.status === 'PAUSED' || t.status === 'WAITING_RESOURCE' || t.status === 'FAILED') {
+            actions.append(el('button', {class: 'agent-icon-btn', style: 'color:var(--primary);', onclick: async () => {
+              await api(`friend/${qq}/agent_task_action`, {action: 'resume', task_id: t.task_id});
+              toast('已继续');
+              renderContent();
+            }}, '继续执行'));
+          } else if (t.status === 'WAITING_APPROVAL') {
+            actions.append(el('button', {class: 'primary', style: 'min-height:30px; font-size:12px;', onclick: async () => {
+              if (t.category === 'goal_plan') {
+                if (!confirm('按现有授权范围和预算执行以下阶段计划？\n' + t.result)) return;
+                await api(`friend/${qq}/agent_goal_action`, {action: 'accept_plan', task_id: t.task_id});
+                toast('目标已创建');
+              } else {
+                await api(`friend/${qq}/agent_task_action`, {action: 'approve', task_id: t.task_id});
+                toast('已确认验收');
+              }
+              renderContent();
+            }}, t.category === 'goal_plan' ? '确认计划并创建目标' : '确认验收通过'));
+          }
+
+          const detailsBtn = el('button', {class: 'agent-icon-btn', style: 'color:var(--on-surface-variant);'}, '查看日志');
+          const logContainer = el('div', {style: 'display:none; margin-top:8px; padding-top:8px; border-top:1px dashed var(--outline-variant); font-size:11px; font-family:monospace; max-height:160px; overflow-y:auto;'});
+
+          detailsBtn.onclick = async () => {
+            if (logContainer.style.display === 'none') {
+              logContainer.style.display = 'block';
+              detailsBtn.textContent = '收起日志';
+              logContainer.textContent = '正在读取日志…';
+              const detail = await api(`friend/${qq}/agent_task_detail?task_id=${encodeURIComponent(t.task_id)}`);
+              logContainer.replaceChildren();
+              for (const l of (detail.logs || [])) {
+                logContainer.append(el('div', {style: 'margin-bottom:3px;'},
+                  el('span', {class: 'muted'}, `[${l.created_at.slice(11,19)}] [${l.step_name}] `),
+                  el('span', {}, l.message)
+                ));
+              }
+            } else {
+              logContainer.style.display = 'none';
+              detailsBtn.textContent = '查看日志';
+            }
+          };
+          actions.prepend(detailsBtn);
+
+          const taskCard = el('div', {class: 'card', style: 'padding: 12px; margin-bottom: 10px; border-radius: 12px;'},
+            cardHeader, desc, ...(t.category === 'goal_plan' ? [el('pre', {style:'white-space:pre-wrap; max-height:240px; overflow:auto;'}, t.result || '规划完成后在此显示阶段草案')] : []), actions, logContainer
+          );
+          contentBox.append(taskCard);
+        }
+
+      } else if (currentTab === 'goals') {
+        const res = await api(`friend/${qq}/agent_goals`);
+        contentBox.replaceChildren();
+        const labels = {ACTIVE:'执行中', PAUSED:'已暂停', BLOCKED:'受阻',
+          WAITING_REVIEW:'待确认', COMPLETED:'已完成', CANCELLED:'已取消'};
+        if (!(res.goals || []).length) contentBox.append(el('div', {class:'card'}, '暂无长期目标，可在新建目标中创建。'));
+        for (const g of (res.goals || [])) {
+          const actions = el('div', {class:'row', style:'gap:8px; flex-wrap:wrap; margin-top:10px;'});
+          const control = (action, text) => el('button', {onclick:async () => {
+            try {
+              const review = action === 'complete' ? prompt('请按验收标准填写评估结果：' + g.completion_criteria) : '';
+              if (action === 'complete' && !review) return;
+              if (action === 'cancel' && !confirm('终止此目标及其未完成的阶段？')) return;
+              const result = await api(`friend/${qq}/agent_goal_action`, {action, goal_id:g.goal_id, review});
+              toast(result.message); await renderContent();
+            } catch (err) { toast(err.message); }
+          }}, text);
+          if (g.status === 'ACTIVE') actions.append(control('pause','暂停'));
+          if (g.status === 'PAUSED' || g.status === 'BLOCKED') actions.append(control('resume','继续目标'));
+          if (g.status === 'WAITING_REVIEW') actions.append(control('complete','确认最终验收'));
+          if (!['COMPLETED','CANCELLED'].includes(g.status)) actions.append(control('cancel','终止'));
+          const details = el('details', {}, el('summary', {}, '阶段、产物与历史'));
+          for (const t of g.tasks) details.append(el('div', {class:'muted', style:'margin-top:8px; white-space:pre-wrap;'},
+            `${t.title} · ${TASK_STATES[t.status] || t.status}\n${t.error || t.result || '等待执行'}${t.artifacts.length ? '\n产物：' + t.artifacts.join(', ') : ''}`));
+          for (const event of g.events) details.append(el('div', {class:'muted'}, `${event.created_at.slice(0,19)} ${event.message}`));
+          contentBox.append(el('div', {class:'card', style:'padding:12px; margin-bottom:10px;'},
+            el('strong', {}, g.description), el('div', {class:'muted'},
+              `${labels[g.status] || g.status} · 已验收 ${Math.round(g.progress * 100)}% · 调用 ${g.call_count}/${g.max_calls}`),
+            el('p', {}, '授权范围：' + g.scope), el('p', {}, '验收标准：' + g.completion_criteria),
+            details, actions));
+        }
+      } else if (currentTab === 'newGoal') {
+        contentBox.replaceChildren();
+        const field = (placeholder, multiline=false) => el(multiline ? 'textarea' : 'input',
+          {class:'agent-input', placeholder, style:'width:100%; min-height:42px; margin-bottom:10px;'});
+        const description = field('长期目标，例如：维护并重构我的代码仓库');
+        const scope = field('授权范围，例如：仅修改指定工程目录；不发布、不操作账号');
+        const criteria = field('总体验收标准');
+        const stages = field('阶段计划：每行“标题 | 执行说明”。按顺序执行，使用已有电脑权限。', true);
+        stages.style.minHeight = '100px';
+        const category = el('select', {class:'agent-select', style:'width:100%; margin-bottom:10px;'},
+          ...[['general','通用任务（人工验收）'],['code','代码开发'],['file','文件操作'],['data','数据分析'],['research','研究（证据验收）'],['browser','浏览器自动化']]
+            .map(([value, text]) => el('option', {value}, text)));
+        const calls = field('模型调用次数上限'); calls.type = 'number'; calls.min = '1'; calls.value = '100';
+        const tokens = field('总词元预算（0 为不限）'); tokens.type = 'number'; tokens.min = '0'; tokens.value = '100000';
+        const submit = el('button', {class:'primary'}, '授权并创建目标');
+        submit.onclick = async () => {
+          submit.disabled = true;
+          try {
+            const milestones = stages.value.split(/\r?\n/).filter(line => line.trim()).map(line => {
+              const index = line.indexOf('|');
+              if (index < 1) throw new Error('每行填写：阶段标题、竖线、执行说明');
+              return {title:line.slice(0,index).trim(), description:line.slice(index+1).trim(), category:category.value};
+            });
+            await api(`friend/${qq}/agent_goal_action`, {action:'create', description:description.value,
+              scope:scope.value, completion_criteria:criteria.value, milestones,
+              max_calls:Number(calls.value), token_budget:Number(tokens.value)});
+            tabGoals.click(); toast('目标已创建，按当前好友工具权限执行');
+          } catch (err) { toast(err.message); }
+          finally { submit.disabled = false; }
+        };
+        const propose = el('button', {}, '先让 AI 生成阶段草案');
+        const autoRun = el('button', {class:'primary'}, 'AI 规划并自动执行');
+        const runPlanning = async autoStart => {
+          propose.disabled = true;
+          autoRun.disabled = true;
+          try {
+            await api(`friend/${qq}/agent_goal_action`, {action:'propose', description:description.value,
+              scope:scope.value, completion_criteria:criteria.value,
+              max_calls:Number(calls.value), token_budget:Number(tokens.value), auto_start:autoStart});
+            tabTasks.click(); toast(autoStart ? '已授权 AI 在上述范围内规划并执行，可随时暂停' : '草案已入队，确认后开始执行');
+          } catch (err) { toast(err.message); }
+          finally { propose.disabled = false; autoRun.disabled = false; }
+        };
+        propose.onclick = () => runPlanning(false);
+        autoRun.onclick = () => runPlanning(true);
+        contentBox.append(el('p', {class:'muted'}, '确认规划后入队，调用次数和词元预算分配到各阶段，并遵守项目权限。'),
+          description, scope, criteria, stages, category,
+          el('label', {}, '模型调用次数上限'), calls, el('label', {}, '词元预算（估算与实际用量分别记录）'), tokens, el('p', {class:'muted'}, 'AI 规划最多 2 次调用；规划额度不超过 32000 Token 或所设总预算，执行阶段按预算分配。'), autoRun, propose, submit);
+      } else if (currentTab === 'approvals') {
+        const res = await api(`friend/${qq}/agent_approvals`);
+        const approvals = res.approvals || [];
+        contentBox.replaceChildren();
+
+        if (approvals.length === 0) {
+          contentBox.append(el('div', {class: 'card', style: 'text-align:center; padding:24px; color:var(--on-surface-variant);'}, '暂无待审批的敏感操作'));
+          return;
+        }
+
+        for (const a of approvals) {
+          const aCard = el('div', {class: 'card', style: 'background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); padding: 12px; margin-bottom: 10px; border-radius: 12px;'},
+            el('div', {style: 'font-weight:600; color: #dc2626; font-size:13px;'}, `待处理 · 待审批操作类型：${a.category}`),
+            el('div', {style: 'font-size:13px; margin: 6px 0; color:var(--on-surface);'}, a.description),
+            el('div', {class: 'muted', style: 'font-size:11px; font-family:monospace;'}, `详情：${JSON.stringify(a.details)}`),
+            el('div', {style: 'display:flex; gap:8px; justify-content:flex-end; margin-top:10px;'},
+              el('button', {class: 'agent-icon-btn', style: 'color:#dc2626;', onclick: async () => {
+                await api(`friend/${qq}/agent_approval_decision`, {req_id: a.req_id, decision: 'reject'});
+                toast('已拒绝');
+                renderContent();
+              }}, '拒绝 拒绝'),
+              el('button', {class: 'agent-icon-btn', style: 'color:var(--primary); font-weight:600;', onclick: async () => {
+                await api(`friend/${qq}/agent_approval_decision`, {req_id: a.req_id, decision: 'approve', allowed_scope: 'task'});
+                toast('已对当前任务授权');
+                renderContent();
+              }}, '允许本任务'),
+              el('button', {class: 'primary', style: 'min-height:30px; font-size:12px;', onclick: async () => {
+                await api(`friend/${qq}/agent_approval_decision`, {req_id: a.req_id, decision: 'approve', allowed_scope: 'once'});
+                toast('已允许一次');
+                renderContent();
+              }}, '允许一次')
+            )
+          );
+          contentBox.append(aCard);
+        }
+
+      } else if (currentTab === 'new') {
+        contentBox.replaceChildren();
+        const titleInput = el('input', {class: 'agent-input', placeholder: '任务标题，例如：优化首页响应速度', style: 'width:100%; min-height:40px; margin-bottom:10px;'});
+        const descInput = el('textarea', {class: 'agent-input', placeholder: '任务说明、目标产物与验收标准…', style: 'width:100%; min-height:90px; margin-bottom:10px; resize:vertical;'});
+        const catSelect = el('select', {class: 'agent-select', style: 'width:100%; min-height:40px; margin-bottom:14px;'},
+          el('option', {value: 'code'}, '代码开发（自动构建与测试）'),
+          el('option', {value: 'research'}, '深度研究（分阶段验收）'),
+          el('option', {value: 'browser'}, '浏览器自动化（请在说明中写明真实 URL）'),
+          el('option', {value: 'data'}, '结构化数据任务'),
+          el('option', {value: 'file'}, '文件生成与操作'),
+          el('option', {value: 'general'}, '通用自主任务')
+        );
+
+        const submitBtn = el('button', {class: 'primary', style: 'width:100%; min-height:42px; font-weight:600;'}, '提交到后台执行');
+        submitBtn.onclick = async () => {
+          const t = titleInput.value.trim();
+          const d = descInput.value.trim();
+          if (!t) { toast('请填写任务标题'); return; }
+          submitBtn.disabled = true;
+          try {
+            const res = await api(`friend/${qq}/agent_task_action`, {
+              action: 'create',
+              title: t,
+              description: d || t,
+              category: catSelect.value,
+              priority: 50
+            });
+            toast('任务已创建并进入后台队列');
+            currentTab = 'tasks';
+            tabTasks.classList.add('primary');
+            tabNew.classList.remove('primary');
+            renderContent();
+          } catch (e) {
+            toast('创建任务失败：' + e.message);
+          } finally {
+            submitBtn.disabled = false;
+          }
+        };
+
+        const form = el('div', {class: 'card', style: 'padding:14px; border-radius:12px;'},
+          el('div', {style: 'font-weight:600; margin-bottom:6px; font-size:13px;'}, '任务标题'),
+          titleInput,
+          el('div', {style: 'font-weight:600; margin-bottom:6px; font-size:13px;'}, '详细任务说明'),
+          descInput,
+          el('div', {style: 'font-weight:600; margin-bottom:6px; font-size:13px;'}, '任务类型'),
+          catSelect,
+          submitBtn
+        );
+        contentBox.append(form);
+      }
+    } catch (err) {
+      contentBox.replaceChildren(el('div', {class: 'card', style: 'color:#dc2626; padding:16px;'}, '加载失败：' + err.message));
+    }
+  };
+
+  const tabTasks = el('button', {}, '任务');
+  const tabAppr = el('button', {}, '审批');
+  const tabNew = el('button', {}, '新建任务');
+  const tabGoals = el('button', {}, '长期目标');
+  const tabNewGoal = el('button', {}, '新建目标');
+  for (const [button, tab] of [[tabTasks,'tasks'],[tabAppr,'approvals'],[tabNew,'new'],[tabGoals,'goals'],[tabNewGoal,'newGoal']]) {
+    button.style.cssText = 'flex:0 0 auto; min-height:36px; font-size:13px; padding:0 14px; white-space:nowrap;';
+    button.onclick = () => {
+      currentTab = tab;
+      for (const item of [tabTasks,tabAppr,tabNew,tabGoals,tabNewGoal]) item.classList.toggle('primary', item === button);
+      renderContent();
+    };
+  }
+  tabTasks.classList.add('primary');
+
+  const closeBtn = el('button', {class: 'agent-icon-btn', style: 'font-size:13px; font-weight:600;'}, '返回');
+  closeBtn.onclick = () => render();
+
+  const headerRow = el('div', {style: 'display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;'},
+    el('h2', {style: 'font-size: 16px; margin:0;'}, '任务与审批中心'),
+    closeBtn
+  );
+
+  const navRow = el('div', {class: 'row task-tabs', style: 'gap: 8px; margin-bottom: 12px;'}, tabTasks, tabAppr, tabNew, tabGoals, tabNewGoal);
+
+  show(card('', headerRow, navRow, contentBox));
+  renderContent();
+}
+
+const PAGE_VIEWS = {background: backgroundPage, agent: agentPage, collab: collabPage, study: studyPage, workflows: workflowsPage, status: statusPage, chat: chatPage, proactive: proactivePage, memory: memoryPage, more: morePage,
+                    basic: basicPage, style: stylePage, voice: voicePage, topics: topicsPage, stickers: stickersPage, template: templatePage,
+                    model: modelPage, emotion: emotionPage, context: contextPage};
+
+function button(text, work) {
+  const node = el('button', {}, text);
+  node.onclick = () => act(node, work);
+  return node;
+}
+
+function researchText(kind, run) {
+  run = run || {};
+  const labels = {running: '正在整理', ready: '已就绪', failed: '失败', no_interests: '没有匹配的兴趣'};
+  let text = labels[run.status] || '尚未整理';
+  if (run.at) text += ' · ' + new Date(run.at * 1000).toLocaleString('zh-CN', {month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'});
+  if (run.topics) text += ' · ' + run.topics.join(', ') + `，新增 ${run.added || 0} 条`;
+  if (run.error) text += ' · ' + run.error;
+  if (run.next_refresh) text += ' · 下次：' + new Date(run.next_refresh * 1000).toLocaleString('zh-CN', {month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'});
+  return text;
+}
+
+document.getElementById('reload').onclick = () => render().catch(error => toast(error.message));
+// 2026-10-12 user: inside the phone app its own top bar replaces this header and calls houseRefresh
+if (new URLSearchParams(location.search).has('app')) document.body.classList.add('in-app');
+window.houseRefresh = () => render().catch(error => toast(error.message));
+window.addEventListener('hashchange', () => { readToken(); openHouse().catch(error => toast(error.message)); });  // scanned again while open
+readToken();
+if (!token) show(card('需要配对', el('div', {}, '请在电脑端进入状态与远程连接，扫描手机配对二维码。')));
+else openHouse().catch(error => show(card('无法连接电脑', el('div', {}, error.message), el('div', {class: 'muted'}, '请确认电脑上的应用正在运行，且当前使用的局域网、组网或转发连接可达。'))));
+timer = setInterval(() => {  // the status tab follows the bridge; other tabs are refreshed by hand
+  if (!document.hidden && view.name === 'friend' && view.tab === 'status') render().catch(() => {});
+}, 10000);
+</script>
+</body>
+</html>

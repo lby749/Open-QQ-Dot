@@ -1,0 +1,346 @@
+<resources>
+    <string name="app_name">Open QQ Dot</string>
+    <string name="share_target_label">Open QQ Dot</string>
+
+    <!-- Accessibility Service -->
+    <string name="accessibility_service_description">通过无障碍服务识别前台应用，并按需读取允许的公开界面。请只启用所需的只读工具。</string>
+
+    <!-- Notification Channel -->
+    <string name="notification_channel_mcp_server_id">mcp_server_channel</string>
+    <string name="notification_channel_mcp_server_name">QQ 直连服务</string>
+    <!-- Notification Content -->
+    <string name="notification_mcp_server_title">QQ 直连服务正在运行</string>
+
+    <!-- App Bar -->
+    <string name="app_bar_title">QQ 直连</string>
+
+    <!-- Tabs -->
+    <string name="tab_server">连接</string>
+    <string name="tab_settings">设置</string>
+    <string name="tab_about">关于</string>
+
+    <!-- Settings Sub-pages -->
+    <string name="settings_general_title">常规</string>
+    <string name="settings_general_subtitle">端口、地址、设备名称、开机启动</string>
+    <string name="settings_access_title">连接认证</string>
+    <string name="settings_access_subtitle">OAuth、访问令牌、已连接客户端</string>
+    <string name="settings_security_title">安全</string>
+    <string name="settings_security_subtitle">HTTPS、证书</string>
+    <string name="settings_tunnel_title">跨网络连接</string>
+    <string name="settings_tunnel_subtitle">Cloudflare、ngrok 隧道</string>
+    <string name="settings_mcp_tools_title">工具权限</string>
+    <string name="settings_mcp_tools_subtitle">启用或关闭工具，只保留所需权限</string>
+    <string name="settings_mcp_tools_placeholder">工具权限将在后续更新中提供</string>
+    <string name="settings_mcp_tools_missing_permission">尚未授权，此工具对客户端不可见。点此授权。</string>
+    <string name="settings_mcp_tools_param_missing_permission">尚未授权，此选项不可用。点此授权。</string>
+    <string name="settings_permissions_title">系统权限</string>
+    <string name="settings_permissions_subtitle">无障碍、通知、摄像头、麦克风</string>
+    <string name="settings_storage_title">存储</string>
+    <string name="settings_storage_subtitle">存储位置、文件大小限制</string>
+
+    <!-- About Screen -->
+    <string name="about_author_section">上游作者</string>
+    <string name="about_author_name">Daniele Salvatore Albano</string>
+    <string name="about_author_email">d.albano@gmail.com</string>
+    <string name="about_author_linkedin">linkedin.com/in/danielesalvatorealbano</string>
+    <string name="about_author_x">x.com/daniele_dll</string>
+    <string name="about_links_section">项目链接</string>
+    <string name="about_link_github">开源项目源码</string>
+    <string name="about_link_license">MIT 开源许可证</string>
+    <string name="about_link_issues">反馈问题</string>
+    <string name="about_attributions_section">第三方来源</string>
+    <string name="about_attribution_dbip">IP 地理信息由 DB-IP（db-ip.com）提供，采用 CC BY 4.0 许可。</string>
+    <string name="about_attribution_privacy_model">隐私检测模型由 Ai4Privacy 提供（MIT 许可），基于 Llama 构建。</string>
+    <string name="about_footer">Open QQ Dot 手机端 · MIT 许可</string>
+
+    <!-- Clipboard -->
+    <string name="copied_to_clipboard">已复制</string>
+
+    <!-- Server Status -->
+    <string name="server_status_title">服务状态</string>
+    <string name="server_status_running">运行中</string>
+    <string name="server_status_stopped">已停止</string>
+    <string name="server_status_starting">正在启动…</string>
+    <string name="server_status_stopping">正在停止…</string>
+    <string name="server_status_error">出错：%1$s</string>
+    <string name="server_action_start">启动</string>
+    <string name="server_action_stop">停止</string>
+
+    <!-- Configuration -->
+    <string name="configuration_title">连接配置</string>
+    <string name="config_binding_address_label">监听地址</string>
+    <string name="config_binding_localhost">仅本机（127.0.0.1）</string>
+    <string name="config_binding_network">局域网（0.0.0.0）</string>
+    <string name="config_port_label">端口</string>
+    <string name="config_device_slug_label">设备标识（可选）</string>
+    <string name="config_device_slug_hint">例如 honor_phone</string>
+    <string name="config_bearer_token_label">手机访问令牌（Bearer Token）</string>
+    <string name="config_token_show">显示令牌</string>
+    <string name="config_token_hide">隐藏令牌</string>
+    <string name="config_token_copy">复制令牌</string>
+    <string name="config_token_regenerate">生成新令牌</string>
+    <string name="config_token_clear">清空令牌</string>
+    <string name="config_bearer_token_empty_warning_title">尚未启用认证</string>
+    <string name="config_bearer_token_empty_warning_body">访问令牌为空，能连接此服务的人都可访问。请先停止服务，再生成令牌以启用认证。</string>
+    <string name="config_auto_start_label">开机自动启动</string>
+    <string name="config_hide_from_recents_label">从最近任务中隐藏</string>
+    <string name="config_hide_from_recents_description">不在系统的最近任务列表中显示本应用。</string>
+    <string name="config_tool_call_indicator_label">显示工具调用提示</string>
+    <string name="config_tool_call_indicator_description">设备被 MCP 调用时显示提示浮层，提示不包含隐私内容。</string>
+    <string name="config_https_enabled_label">启用 HTTPS</string>
+    <string name="config_certificate_title">HTTPS 证书</string>
+    <string name="config_cert_auto_generated">自动生成的自签名证书</string>
+    <string name="config_cert_custom">自定义证书（.p12/.pfx）</string>
+    <string name="config_hostname_label">证书主机名</string>
+
+    <!-- Network Security Warning -->
+    <string name="network_warning_title">局域网访问提醒</string>
+    <string name="network_warning_message">监听 0.0.0.0 后，同一 Wi-Fi 或热点中的其他设备可能连接本服务。请只在可信的私人网络使用，并启用认证。</string>
+    <string name="network_warning_confirm">我已了解，继续</string>
+    <string name="network_warning_cancel">取消</string>
+
+    <!-- Permissions -->
+    <string name="permissions_title">系统权限</string>
+    <string name="permission_accessibility">无障碍服务</string>
+    <string name="permission_notifications">显示通知</string>
+    <string name="permission_enable">启用</string>
+    <string name="permission_enabled">已启用</string>
+    <string name="permission_granted">已授权</string>
+    <string name="permission_grant">授权</string>
+    <string name="permission_camera">摄像头</string>
+    <string name="permission_microphone">麦克风</string>
+    <string name="permission_notification_listener">通知读取权限</string>
+    <string name="permission_location">位置</string>
+
+    <!-- Permissions screen: section headers -->
+    <string name="permission_section_required_title">必要权限</string>
+    <string name="permission_section_required_subtitle">前台应用识别和按需读取界面需要此权限。</string>
+    <string name="permission_section_required_if_title">按需授权</string>
+    <string name="permission_section_required_if_subtitle">只授权你准备使用的功能。</string>
+    <string name="permission_section_optional_title">可选权限</string>
+    <string name="permission_section_optional_subtitle">不授权也能使用其他功能。</string>
+    <!-- Permissions screen: per-permission rationale (default / foss values) -->
+    <string name="permission_accessibility_rationale">识别前台应用、读取界面；上游同时支持点击和输入，请在工具权限中关闭这些操作。</string>
+    <string name="permission_notifications_rationale">显示服务状态、事件通道提醒及连接审批通知。</string>
+    <string name="permission_notification_listener_rationale">本定制版仅推送通知来源和类型，不推送通知正文。</string>
+    <string name="permission_camera_rationale">拍照或录像；手机上下文功能不需要。</string>
+    <string name="permission_location_rationale">读取定位；手机上下文基础功能不需要。</string>
+    <string name="permission_microphone_rationale">为录像录音；手机上下文功能不需要。</string>
+
+    <!-- Permission Warning (main screen: accessibility is the one required permission) -->
+    <string name="permission_warning_title">请先启用无障碍服务</string>
+    <string name="permission_warning_action">前往系统权限</string>
+    <string name="server_pending_approvals_title">有 %1$d 个连接请求待确认</string>
+    <string name="server_pending_approvals_action">查看</string>
+
+    <!-- Network Access Suggestion (main screen: localhost-only bind with no tunnel) -->
+    <string name="server_network_access_suggestion_title">当前仅手机本机可访问</string>
+    <string name="server_network_access_suggestion_wifi">允许局域网访问</string>
+    <string name="server_network_access_suggestion_tunnel">设置跨网络连接</string>
+
+    <!-- Battery Optimization -->
+    <string name="battery_optimization_card_title">允许应用持续在后台运行</string>
+    <string name="battery_optimization_card_action">关闭电池优化</string>
+
+    <!-- Server Logs -->
+    <string name="server_logs_title">运行日志</string>
+    <string name="server_logs_empty">暂无日志</string>
+    <string name="server_logs_show_more">查看全部</string>
+    <string name="server_logs_clear">清空日志</string>
+    <string name="server_logs_clear_dialog_title">清空日志？</string>
+    <string name="server_logs_clear_dialog_body">所有服务日志将被永久删除。</string>
+    <string name="server_logs_clear_dialog_confirm">清空</string>
+    <string name="server_logs_clear_dialog_cancel">取消</string>
+    <string name="server_logs_type_tool_call">工具调用</string>
+    <string name="server_logs_type_tunnel">跨网络连接</string>
+    <string name="server_logs_type_server">服务</string>
+    <string name="server_logs_type_oauth">OAuth</string>
+    <string name="server_logs_type_auth">认证</string>
+    <string name="server_logs_type_channel">事件通道</string>
+    <string name="server_logs_type_settings">设置</string>
+    <string name="server_logs_type_privacy">隐私</string>
+
+    <!-- Remote Access / Tunnel -->
+    <string name="remote_access_title">跨网络连接</string>
+    <string name="remote_access_enabled_label">启用跨网络连接</string>
+    <string name="remote_access_provider_label">隧道服务商</string>
+    <string name="remote_access_provider_cloudflare">Cloudflare</string>
+    <string name="remote_access_provider_cloudflare_desc">无需账号</string>
+    <string name="remote_access_provider_ngrok">ngrok</string>
+    <string name="remote_access_provider_ngrok_desc">需要账号</string>
+    <string name="remote_access_ngrok_authtoken_label">ngrok 认证令牌</string>
+    <string name="remote_access_ngrok_domain_label">域名（可选）</string>
+    <string name="remote_access_ngrok_domain_hint">留空则自动分配</string>
+    <string name="remote_access_status_disconnected">未连接</string>
+    <string name="remote_access_status_connecting">正在连接…</string>
+    <string name="remote_access_status_connected">已连接</string>
+    <string name="remote_access_status_error">出错：%1$s</string>
+    <string name="remote_access_public_url_label">公网地址</string>
+    <string name="remote_access_ngrok_unsupported">当前设备不支持 ngrok（需要 arm64-v8a 或 x86_64）</string>
+    <string name="remote_access_cloudflare_mode_label">Cloudflare 连接模式</string>
+    <string name="remote_access_cloudflare_mode_free">免费临时连接</string>
+    <string name="remote_access_cloudflare_mode_free_desc">随机临时网址，无需账号</string>
+    <string name="remote_access_cloudflare_mode_token">使用固定隧道令牌</string>
+    <string name="remote_access_cloudflare_mode_token_desc">通过你的 Cloudflare 账号使用固定域名</string>
+    <string name="remote_access_cloudflare_token_label">Cloudflare 隧道令牌</string>
+    <string name="remote_access_cloudflare_extra_args_label">额外参数</string>
+    <string name="remote_access_cloudflare_extra_args_hint">例如 --edge region1.v2.argotunnel.com:7844</string>
+    <string name="remote_access_cloudflare_extra_args_help">可选，传给 cloudflared 的参数，例如指定 --edge 以绕过 DNS 问题。</string>
+    <string name="remote_access_cloudflare_service_url_help">在 Cloudflare 控制台中，将此隧道的公网主机名对应的服务地址设置为：</string>
+    <string name="remote_access_cloudflare_service_url_copy">复制服务地址</string>
+    <string name="remote_access_https_disabled_warning">手机本机 HTTPS 启用时不能使用隧道，请先关闭本机 HTTPS。隧道公网地址仍使用 HTTPS。</string>
+    <string name="remote_access_no_route_configured">尚未配置路由</string>
+    <string name="remote_access_route_misconfigured">路由未指向此服务</string>
+
+    <!-- Connection Info -->
+    <string name="connection_info_title">连接信息</string>
+    <string name="connection_info_ip">IP 地址</string>
+    <string name="connection_info_port">端口</string>
+    <string name="connection_info_url">连接地址</string>
+    <string name="connection_info_token">手机访问令牌</string>
+    <string name="connection_info_copy_all">复制全部</string>
+    <string name="connection_info_share">分享</string>
+
+    <!-- Storage Locations -->
+    <string name="storage_locations_title">存储位置</string>
+    <string name="storage_locations_description">添加你选择的目录，供文件工具使用。手机上下文功能无需添加。</string>
+    <string name="storage_location_no_locations">尚未添加存储位置，点 + 添加。</string>
+    <string name="storage_location_path_label">路径：%1$s</string>
+    <string name="storage_location_add_button">添加存储位置</string>
+    <string name="storage_location_add_dialog_title">添加存储位置</string>
+    <string name="storage_location_add_dialog_description_label">描述（可选）</string>
+    <string name="storage_location_add_dialog_description_hint">例如 项目文件、下载</string>
+    <string name="storage_location_add_dialog_browse">浏览</string>
+    <string name="storage_location_add_dialog_selected">已选择：%1$s</string>
+    <string name="storage_location_add_dialog_no_selection">未选择目录</string>
+    <string name="storage_location_add_dialog_add">添加</string>
+    <string name="storage_location_add_dialog_cancel">取消</string>
+    <string name="storage_location_add_dialog_duplicate">已经添加过此目录。</string>
+    <string name="storage_location_description_counter">%1$d / %2$d</string>
+    <string name="storage_location_edit_dialog_title">修改描述</string>
+    <string name="storage_location_edit_dialog_save">保存</string>
+    <string name="storage_location_delete_dialog_title">移除存储位置</string>
+    <string name="storage_location_delete_dialog_message">移除 %1$s？服务将无法再访问此位置的文件。</string>
+    <string name="storage_location_delete_dialog_confirm">移除</string>
+    <string name="storage_location_delete_dialog_cancel">取消</string>
+    <string name="storage_location_allow_write_label">允许写入</string>
+    <string name="storage_location_allow_delete_label">允许删除</string>
+    <string name="storage_builtin_locations_title">内置位置</string>
+    <string name="storage_builtin_locations_description">通过系统媒体存储读取或写入文件，不需要额外设置。</string>
+    <string name="storage_user_locations_title">自选位置</string>
+    <string name="storage_builtin_grant_all_files">授予所有文件访问权限</string>
+    <string name="storage_builtin_all_files_granted">已授予所有文件访问权限</string>
+    <string name="storage_builtin_manage_access">管理访问权限</string>
+    <string name="storage_file_size_limit_label">文件大小限制（MB）</string>
+    <string name="storage_file_size_limit_error">请输入 %1$d 至 %2$d MB</string>
+    <string name="storage_download_timeout_label">下载超时（秒）</string>
+    <string name="storage_download_timeout_error">请输入 %1$d 至 %2$d 秒</string>
+    <string name="storage_allow_http_downloads_label">允许 HTTP 下载</string>
+    <string name="storage_allow_http_downloads_description">允许从未加密的 HTTP 地址下载，安全性较低。</string>
+    <string name="storage_allow_unverified_https_label">允许未验证的 HTTPS</string>
+    <string name="storage_allow_unverified_https_description">允许使用未验证的 HTTPS 证书下载，安全性较低。</string>
+
+    <!-- Event Channel — start/stop dialogs -->
+    <string name="channel_not_configured_dialog_title">请先填写电脑事件接收地址</string>
+    <string name="channel_not_configured_dialog_body">前往“设置 → 事件通道”，填写电脑配对页给出的接收地址和事件令牌，再回首页启动事件通道。手机小屋要求填写正确令牌。</string>
+    <string name="channel_not_configured_dialog_ok">知道了</string>
+
+    <!-- Access settings (OAuth + bearer) -->
+    <string name="access_title">连接认证</string>
+    <string name="access_oauth_label">OAuth</string>
+    <string name="access_oauth_supporting">需要已连接的 HTTPS 公网隧道</string>
+    <string name="access_connected_clients">已连接客户端</string>
+    <string name="access_bearer_label">访问令牌认证</string>
+    <string name="access_bearer_token_field_label">手机访问令牌（Bearer Token）</string>
+    <string name="access_public_url_label">自定义公网地址（可选）</string>
+    <string name="access_public_url_supporting">留空则自动识别；填写后将用于 OAuth 信息和分享链接。</string>
+    <string name="access_no_auth_warning_title">服务尚未启用任何认证</string>
+    <string name="access_no_auth_warning_body">任何能连接此服务的人都可能控制设备，请启用访问令牌认证。</string>
+    <string name="access_internet_exposure_warning_title">当前可从互联网访问</string>
+    <string name="access_internet_exposure_warning_body">隧道已启用，但认证已关闭。知道地址的人可能访问设备。请启用 OAuth 或访问令牌认证。</string>
+    <string name="access_disable_auth_dialog_title">关闭全部认证？</string>
+    <string name="access_disable_auth_dialog_body">关闭后，任何能连接此服务的人都可能控制设备。仍要继续吗？</string>
+    <string name="access_disable_auth_confirm">仍然关闭</string>
+    <string name="access_disable_auth_cancel">取消</string>
+    <string name="access_token_show">显示令牌</string>
+    <string name="access_token_hide">隐藏令牌</string>
+    <string name="access_token_copy">复制令牌</string>
+    <string name="access_token_regenerate">生成新令牌</string>
+
+    <!-- Connected clients -->
+    <string name="oauth_clients_title">已连接客户端</string>
+    <string name="oauth_clients_empty">暂无客户端。通过 OAuth 连接后会显示在这里。</string>
+    <string name="oauth_clients_created">创建于 %1$s</string>
+    <string name="oauth_clients_last_used">最近使用：%1$s</string>
+    <string name="oauth_clients_revoke">撤销授权</string>
+    <string name="oauth_clients_revoke_dialog_title">撤销客户端授权？</string>
+    <string name="oauth_clients_revoke_dialog_body">此客户端的令牌会立即失效，需要重新授权才能连接。</string>
+    <string name="oauth_clients_revoke_confirm">撤销</string>
+    <string name="oauth_clients_revoke_cancel">取消</string>
+
+    <!-- On-device approval -->
+    <string name="approval_title">连接请求</string>
+    <string name="approval_empty">暂无待确认请求。</string>
+    <string name="approval_match_code_label">请确认此验证码与你的浏览器一致：</string>
+    <string name="approval_approve">允许</string>
+    <string name="approval_deny">拒绝</string>
+    <string name="approval_expires_in">剩余 %1$s 后失效</string>
+    <string name="approval_expired">请求已过期</string>
+    <string name="notification_channel_oauth_approval_name">连接审批</string>
+    <string name="notification_oauth_approval_title">有连接请求待确认</string>
+    <string name="notification_oauth_approval_body">有 %1$d 个请求等待确认，点此查看。</string>
+    <string name="notification_channel_update_name">应用更新</string>
+    <string name="notification_update_available_title">发现新版本</string>
+    <string name="notification_update_available_body">发现版本 %1$s，点此查看。</string>
+    <string name="update_banner_text">发现新版本 v%1$s，点此查看</string>
+    <string name="update_banner_open_description">打开版本页面</string>
+    <string name="about_updates_section">更新</string>
+    <string name="about_auto_update_label">自动检查项目更新</string>
+    <string name="about_check_updates_button">检查更新</string>
+    <string name="about_update_up_to_date">已是最新版本</string>
+    <string name="about_update_check_failed">检查失败，请稍后重试。</string>
+    <string name="about_update_dev_build">开发版本暂不自动检查更新</string>
+    <string name="about_update_found">发现版本 %1$s，点此查看。</string>
+    <string name="event_channel_subtitle">推送前台应用、屏幕、充电及可选通知元数据</string>
+    <string name="settings_privacy_title">隐私保护</string>
+    <string name="settings_privacy_subtitle">在向模型提供内容前遮盖个人信息</string>
+    <string name="privacy_enable_label">启用隐私保护</string>
+    <string name="privacy_consent_title">下载隐私检测模型？</string>
+    <string name="privacy_consent_message">隐私保护需要约 154 MB 的检测模型，从 Hugging Face 下载开源 ai4privacy 模型并校验。是否继续？</string>
+    <string name="privacy_consent_confirm">下载并启用</string>
+    <string name="privacy_consent_cancel">取消</string>
+    <string name="privacy_download_progress">正在下载模型… %1$d%%</string>
+    <string name="privacy_download_verifying">正在校验模型…</string>
+    <string name="privacy_download_failed">模型下载失败：%1$s</string>
+    <string name="privacy_status_ready">已生效，模型已加载</string>
+    <string name="privacy_status_deterministic">已生效，仅使用规则检测，模型检测类别已关闭</string>
+    <string name="privacy_status_unavailable">暂不可用：%1$s</string>
+    <string name="privacy_status_disabled">已关闭</string>
+    <string name="privacy_benchmark_estimate">处理约 100 个界面元素时，工具平均额外耗时约 %1$s 秒。</string>
+    <string name="privacy_benchmark_running">正在测量手机性能，可以继续使用应用；测量会自动完成。</string>
+    <string name="privacy_enable_preparing">正在准备隐私保护…</string>
+    <string name="privacy_detection_rates_header">实测检测率</string>
+    <string name="privacy_detection_rates_caption">基于上游项目对 8 种语言、接近真实界面内容的测试。实际效果取决于内容和语言。</string>
+    <string name="privacy_categories_header">保护的信息类别</string>
+    <string name="privacy_category_credentials">密码与凭据</string>
+    <string name="privacy_category_cards_iban">银行卡与银行账号</string>
+    <string name="privacy_category_emails">邮箱地址</string>
+    <string name="privacy_category_phones">电话号码</string>
+    <string name="privacy_category_names">姓名</string>
+    <string name="privacy_category_addresses">地址</string>
+    <string name="privacy_category_national_ids">身份证与证件信息</string>
+    <string name="privacy_mode_header">遮盖方式</string>
+    <string name="privacy_mode_pseudonymize">使用一致的占位符替代</string>
+    <string name="privacy_mode_redact">完全遮盖</string>
+    <string name="privacy_format_header">占位符格式</string>
+    <string name="privacy_format_hashed">一致格式：相同内容保持相同占位符（EMAIL#a1b2c）</string>
+    <string name="privacy_format_numbered">编号格式：每个会话依次编号（[EMAIL_1]）</string>
+    <string name="privacy_disclaimer">检测只能尽量降低风险，不能保证发现所有个人信息。截图仅遮盖被识别且具有坐标的元素。因此本项目默认关闭截图，并限制可读取内容的应用。</string>
+    <string name="privacy_card_title">先保护个人信息</string>
+    <string name="privacy_card_action">设置隐私保护</string>
+    <string name="privacy_card_dismiss">收起</string>
+    <string name="shortcut_scan_short">扫码配对</string>
+    <string name="shortcut_scan_long">扫码配对 QQ 直连</string>
+    <string name="shortcut_open_short">打开 QQ 直连</string>
+    <string name="shortcut_open_long">打开 QQ 直连小屋</string>
+</resources>

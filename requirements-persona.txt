@@ -1,0 +1,2 @@
+# Optional persona/data workers; original QQ requirements remain unchanged.
+ijson==3.5.1

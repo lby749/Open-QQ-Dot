@@ -1,0 +1,9 @@
+# Optional voice cloning (flagship voice tier, VoxCPM2). Install into a SEPARATE Python environment:
+# voxcpm needs transformers>=4.36 and gradio/funasr, which must not replace this app's own pins.
+#   python -m venv voice-clone-env
+#   voice-clone-env\Scripts\python -m pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu128
+#   voice-clone-env\Scripts\python -m pip install -r requirements-voice-clone.txt
+# Then choose voice-clone-env\Scripts\python.exe as "克隆运行环境" on the desktop voice card
+# (saved to build/voice-clone-runtime/runtime.json). An NVIDIA GPU is strongly recommended.
+voxcpm==2.0.3
+numpy

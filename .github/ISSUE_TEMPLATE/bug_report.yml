@@ -1,0 +1,35 @@
+name: 问题反馈
+description: 反馈安装、配置、界面或功能中的问题。
+title: "[问题] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        当前项目仍在 BETA 测试阶段，尚不完善。欢迎提出改进建议，非常感谢。
+        感谢您的支持，如果有帮助的话，请点一个 STAR，谢谢。
+        提交前请移除密钥、登录二维码、账号和私聊内容。
+  - type: input
+    id: version
+    attributes:
+      label: 应用版本与系统
+      placeholder: 例如 1.0.0-beta.1，Windows 11
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 如何重现
+      description: 按操作顺序说明所在界面、所选功能及出现的问题。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期结果与实际结果
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 补充证据
+      description: 可选。请仅附已脱敏的截图或相关错误片段。

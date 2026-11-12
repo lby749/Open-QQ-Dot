@@ -1,0 +1,33 @@
+-r requirements.txt
+-r requirements-persona.txt
+sympy>=1.14,<2
+# Keep the Qt runtime light: Essentials + Addons cover Widgets/Svg/Xml/Multimedia.
+# Do NOT install the PySide6 meta package; it pulls the unused WebEngine wheel.
+# Freeze the release runtime: 6.12.0 crashed in pyside6.abi3.dll at shutdown
+# during the clean-Windows full regression; 6.11.2 is the tested baseline.
+PySide6-Essentials==6.11.2
+PySide6-Addons==6.11.2
+# qfluentwidgets is installed separately with --no-deps so its "PySide6"
+# dependency does not re-introduce WebEngine.
+PySideSix-Frameless-Window>=0.8,<1
+darkdetect>=0.8,<1
+pywin32>=306; sys_platform == "win32"
+websockets>=15,<17
+pystray==0.19.5
+pillow==12.3.0
+psutil==7.0.0
+qrcode>=8,<9
+qq-botpy>=1.2.1,<2
+cryptography==50.0.0
+
+jsonschema>=4.23,<5
+numpy>=2.2,<3
+beautifulsoup4>=4.12,<5
+pypdf>=6,<7
+
+# ONNX is required to assemble FP16 TTS/ASR weights during model download.
+onnx>=1.17,<2
+
+# Local TTS/ASR runtime (QQ voice replies and listening to friend voice).
+sherpa-onnx==1.13.8
+sherpa-onnx-core==1.13.8

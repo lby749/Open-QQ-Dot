@@ -1,0 +1,5 @@
+# Optional runtime libraries only. This does not download model weights.
+torch>=2.6
+transformers>=4.51,<5
+safetensors>=0.5
+sentencepiece>=0.2

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutId="scan_pair"
+        android:shortcutLongLabel="@string/shortcut_scan_long"
+        android:shortcutShortLabel="@string/shortcut_scan_short">
+        <intent
+            android:action="com.danielealbano.androidremotecontrolmcp.SCAN_PAIR"
+            android:targetClass="com.danielealbano.androidremotecontrolmcp.ui.FriendHouseActivity"
+            android:targetPackage="com.danielealbano.androidremotecontrolmcp" />
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutId="open_house"
+        android:shortcutLongLabel="@string/shortcut_open_long"
+        android:shortcutShortLabel="@string/shortcut_open_short">
+        <intent
+            android:action="android.intent.action.MAIN"
+            android:targetClass="com.danielealbano.androidremotecontrolmcp.ui.FriendHouseActivity"
+            android:targetPackage="com.danielealbano.androidremotecontrolmcp" />
+    </shortcut>
+</shortcuts>

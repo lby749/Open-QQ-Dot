@@ -1,0 +1,7 @@
+{
+  "server": "llama-server.exe",
+  "model": "your-model.gguf",
+  "ctx": 16384,
+  "slots": 4,
+  "server_args": []
+}

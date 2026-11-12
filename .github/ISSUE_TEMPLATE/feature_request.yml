@@ -1,0 +1,21 @@
+name: 改进建议
+description: 告诉我们哪些地方不好用，以及你希望怎样改善。
+title: "[建议] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        当前项目仍在 BETA 测试阶段，尚不完善。欢迎提出改进建议，非常感谢。
+        感谢您的支持，如果有帮助的话，请点一个 STAR，谢谢。
+  - type: textarea
+    id: problem
+    attributes:
+      label: 目前遇到的不便
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: 你希望的改进
+    validations:
+      required: true

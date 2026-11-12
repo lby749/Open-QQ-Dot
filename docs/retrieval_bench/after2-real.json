@@ -1,0 +1,553 @@
+{
+ "label": "after2",
+ "mode": "real",
+ "time": "2026-10-26 09:21:29",
+ "modules": {
+  "memory": {
+   "queries": 42,
+   "positives": 30,
+   "negatives": 12,
+   "recall": 0.8833,
+   "ndcg": 0.8735,
+   "mrr": 0.9,
+   "precision": 1.0,
+   "empty_on_positive": 3,
+   "noise_rate": 0,
+   "duplicates": 0,
+   "leaks": 0,
+   "returned_avg": 0.69,
+   "p50_ms": 54.9,
+   "p95_ms": 58.6,
+   "cold_ms": 56.5,
+   "embed_calls": 35,
+   "embed_texts": 35,
+   "rerank_calls": 35,
+   "rerank_pairs": 420,
+   "api_embed_calls": 0,
+   "api_rerank_calls": 0,
+   "gpu_peak_mb": 2192.7,
+   "context_chars": 446,
+   "per_query": [
+    {
+     "query": "团子今天又把沙发抓烂了",
+     "returned": [
+      "M36"
+     ],
+     "gold": {
+      "M01": 2,
+      "M02": 1
+     }
+    },
+    {
+     "query": "猫做完手术恢复得怎么样了呀",
+     "returned": [],
+     "gold": {
+      "M02": 2,
+      "M01": 1
+     }
+    },
+    {
+     "query": "今天地铁好挤，迟到了",
+     "returned": [
+      "M37"
+     ],
+     "gold": {
+      "M04": 2
+     }
+    },
+    {
+     "query": "给你带了芒果蛋糕要不要",
+     "returned": [
+      "M05"
+     ],
+     "gold": {
+      "M05": 2
+     }
+    },
+    {
+     "query": "下午要不要一起喝杯咖啡",
+     "returned": [
+      "M45",
+      "M14"
+     ],
+     "gold": {
+      "M06": 2,
+      "M45": 2,
+      "M14": 1
+     }
+    },
+    {
+     "query": "这周末还去跑步吗",
+     "returned": [
+      "M07"
+     ],
+     "gold": {
+      "M07": 2
+     }
+    },
+    {
+     "query": "日语复习得怎么样了",
+     "returned": [
+      "M08"
+     ],
+     "gold": {
+      "M08": 2
+     }
+    },
+    {
+     "query": "你妈妈的礼物买好了吗",
+     "returned": [
+      "M09"
+     ],
+     "gold": {
+      "M09": 2
+     }
+    },
+    {
+     "query": "那部剧大结局了你看了吗",
+     "returned": [],
+     "gold": {
+      "M10": 2
+     }
+    },
+    {
+     "query": "你弟弟最近考试怎么样",
+     "returned": [
+      "M12"
+     ],
+     "gold": {
+      "M12": 2
+     }
+    },
+    {
+     "query": "外面下大雨了",
+     "returned": [
+      "M13"
+     ],
+     "gold": {
+      "M13": 2
+     }
+    },
+    {
+     "query": "昨晚又熬夜了吧",
+     "returned": [
+      "M14"
+     ],
+     "gold": {
+      "M14": 2
+     }
+    },
+    {
+     "query": "胡桃复刻了，你抽了吗",
+     "returned": [
+      "M15"
+     ],
+     "gold": {
+      "M15": 2
+     }
+    },
+    {
+     "query": "电脑选好了吗，剪视频卡不卡",
+     "returned": [
+      "M16"
+     ],
+     "gold": {
+      "M16": 2
+     }
+    },
+    {
+     "query": "小林最近还好吗",
+     "returned": [
+      "M17"
+     ],
+     "gold": {
+      "M17": 2
+     }
+    },
+    {
+     "query": "国庆的行程定了吗",
+     "returned": [
+      "M23"
+     ],
+     "gold": {
+      "M23": 2
+     }
+    },
+    {
+     "query": "晚上吃火锅记得别放香菜",
+     "returned": [
+      "M24",
+      "M23"
+     ],
+     "gold": {
+      "M24": 2,
+      "M23": 1,
+      "M43": 1
+     }
+    },
+    {
+     "query": "周杰伦要开演唱会了",
+     "returned": [
+      "M25"
+     ],
+     "gold": {
+      "M25": 2
+     }
+    },
+    {
+     "query": "今天又加班到十点",
+     "returned": [
+      "M26"
+     ],
+     "gold": {
+      "M26": 2
+     }
+    },
+    {
+     "query": "考研的事准备得如何",
+     "returned": [
+      "M27"
+     ],
+     "gold": {
+      "M27": 2
+     }
+    },
+    {
+     "query": "羽毛球打得怎么样",
+     "returned": [
+      "M29"
+     ],
+     "gold": {
+      "M29": 2
+     }
+    },
+    {
+     "query": "过年回老家吗",
+     "returned": [
+      "M31"
+     ],
+     "gold": {
+      "M31": 2
+     }
+    },
+    {
+     "query": "最近学会做什么菜了",
+     "returned": [
+      "M32"
+     ],
+     "gold": {
+      "M32": 2
+     }
+    },
+    {
+     "query": "东野圭吾出新书了",
+     "returned": [
+      "M33"
+     ],
+     "gold": {
+      "M33": 2
+     }
+    },
+    {
+     "query": "楼下有只大狗",
+     "returned": [],
+     "gold": {
+      "M34": 2
+     }
+    },
+    {
+     "query": "牙齿复查怎么样",
+     "returned": [
+      "M22"
+     ],
+     "gold": {
+      "M22": 2
+     }
+    },
+    {
+     "query": "你在杭州上班累吗",
+     "returned": [
+      "M03"
+     ],
+     "gold": {
+      "M03": 2,
+      "M26": 1
+     }
+    },
+    {
+     "query": "any plans for the National Day holiday?",
+     "returned": [
+      "M23"
+     ],
+     "gold": {
+      "M23": 2
+     }
+    },
+    {
+     "query": "how's your Japanese exam prep going",
+     "returned": [
+      "M08"
+     ],
+     "gold": {
+      "M08": 2
+     }
+    },
+    {
+     "query": "did you buy the new laptop for video editing",
+     "returned": [
+      "M16"
+     ],
+     "gold": {
+      "M16": 2
+     }
+    },
+    {
+     "query": "面试结果出来了吗",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "搬家累不累",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "哈哈哈哈",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "好的",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "你吃饭了吗",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "晚安",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "这个表情包好好笑",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "你觉得量子计算以后会普及吗",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "嗯嗯",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "在吗",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "OK",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "我刚到家",
+     "returned": [],
+     "gold": {}
+    }
+   ],
+   "index_build_ms": 8325.7
+  },
+  "topics": {
+   "queries": 20,
+   "positives": 13,
+   "negatives": 7,
+   "recall": 1.0,
+   "ndcg": 0.9599,
+   "mrr": 1.0,
+   "precision": 1.0,
+   "empty_on_positive": 0,
+   "noise_rate": 0,
+   "duplicates": 0,
+   "leaks": 0,
+   "returned_avg": 0.7,
+   "p50_ms": 53.1,
+   "p95_ms": 58.3,
+   "cold_ms": 52.3,
+   "embed_calls": 14,
+   "embed_texts": 14,
+   "rerank_calls": 16,
+   "rerank_pairs": 192,
+   "api_embed_calls": 0,
+   "api_rerank_calls": 0,
+   "gpu_peak_mb": 2200.5,
+   "context_chars": 519,
+   "per_query": [
+    {
+     "query": "胡桃复刻了",
+     "returned": [
+      "T01"
+     ],
+     "gold": {
+      "T01": 2
+     }
+    },
+    {
+     "query": "想去听周杰伦演唱会",
+     "returned": [
+      "T03"
+     ],
+     "gold": {
+      "T03": 2
+     }
+    },
+    {
+     "query": "N2听力好难啊",
+     "returned": [
+      "T04"
+     ],
+     "gold": {
+      "T04": 2,
+      "T05": 1
+     }
+    },
+    {
+     "query": "日语考试什么时候报名",
+     "returned": [
+      "T05"
+     ],
+     "gold": {
+      "T05": 2
+     }
+    },
+    {
+     "query": "半马要怎么练",
+     "returned": [
+      "T06"
+     ],
+     "gold": {
+      "T06": 2,
+      "T07": 1
+     }
+    },
+    {
+     "query": "剪视频买什么电脑好",
+     "returned": [
+      "T08"
+     ],
+     "gold": {
+      "T08": 2,
+      "T09": 1
+     }
+    },
+    {
+     "query": "东野圭吾出新书了",
+     "returned": [
+      "T10"
+     ],
+     "gold": {
+      "T10": 2
+     }
+    },
+    {
+     "query": "国庆去成都玩",
+     "returned": [
+      "T14",
+      "T15"
+     ],
+     "gold": {
+      "T14": 2,
+      "T15": 1
+     }
+    },
+    {
+     "query": "猫绝育后要注意什么",
+     "returned": [
+      "T16"
+     ],
+     "gold": {
+      "T16": 2
+     }
+    },
+    {
+     "query": "学吉他扫弦好难",
+     "returned": [
+      "T18"
+     ],
+     "gold": {
+      "T18": 2
+     }
+    },
+    {
+     "query": "想考浙大软工",
+     "returned": [
+      "T13"
+     ],
+     "gold": {
+      "T13": 2
+     }
+    },
+    {
+     "query": "多肉要怎么浇水",
+     "returned": [
+      "T23"
+     ],
+     "gold": {
+      "T23": 2
+     }
+    },
+    {
+     "query": "下午喝冰美式会失眠吗",
+     "returned": [
+      "T19"
+     ],
+     "gold": {
+      "T19": 2
+     }
+    },
+    {
+     "query": "梅雨季好烦",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "好的",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "晚安",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "在吗",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "哈哈哈",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "今天吃什么",
+     "returned": [],
+     "gold": {}
+    },
+    {
+     "query": "你觉得量子计算以后会普及吗",
+     "returned": [],
+     "gold": {}
+    }
+   ],
+   "index_build_ms": 133.1
+  }
+ }
+}

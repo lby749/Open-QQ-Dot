@@ -1,0 +1,22 @@
+[package]
+name = "open-qq-dot-desktop"
+version = "0.1.0"
+description = "Open QQ Dot vNext desktop shell"
+authors = ["Open QQ Dot contributors"]
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "open_qq_dot_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[features]
+custom-protocol = ["tauri/custom-protocol"]
