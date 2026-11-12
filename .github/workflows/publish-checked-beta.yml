@@ -46,6 +46,9 @@ jobs:
           assert re.fullmatch(r'\d+\.\d+\.\d+-beta\.\d+', version)
           assert manifest['repository'] == 'lby749/Open-QQ-Dot'
           assert manifest['status'] == 'BETA' and manifest['private_runtime_data_included'] is False
+          bundle_name = f'OpenQQDot-Release-{version}-All.zip'
+          __import__('shutil').copyfile('/tmp/candidate.zip', '/tmp/release/' + bundle_name)
+          pathlib.Path('/tmp/release/' + bundle_name + '.sha256').write_text(f'{digest}  {bundle_name}\n')
           with open(os.environ['GITHUB_ENV'], 'a') as env:
               env.write(f'RELEASE_VERSION={version}\n')
           with zipfile.ZipFile(f'/tmp/release/OpenQQDot-Source-{version}.zip') as z:
