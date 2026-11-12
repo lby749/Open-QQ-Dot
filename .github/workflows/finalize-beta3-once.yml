@@ -1,0 +1,99 @@
+name: Final BETA3 Windows source validation and publication
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/finalize-beta3-once.yml']
+permissions:
+  contents: read
+jobs:
+  validate-and-publish:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: bash
+    permissions:
+      contents: write
+    env:
+      PYTHONUTF8: '1'
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify reviewed final bundle
+        env:
+          CANDIDATE_URL: https://juvenile-sitting-bestsellers-sterling.trycloudflare.com/candidate.zip
+          CANDIDATE_SHA256: 6a2920ba8456c29c2b91d25a1a9aa772c6603b4241a30796e7f1f91bf150414b
+        run: |
+          python - <<'PY'
+          import hashlib, os, pathlib, urllib.request, zipfile
+          folder=pathlib.Path('build/publication-candidate')
+          folder.mkdir(parents=True,exist_ok=True)
+          bundle=folder/'candidate.zip'
+          urllib.request.urlretrieve(os.environ['CANDIDATE_URL'],bundle)
+          assert hashlib.sha256(bundle.read_bytes()).hexdigest()==os.environ['CANDIDATE_SHA256']
+          with zipfile.ZipFile(bundle) as z:
+              assert z.testzip() is None
+              assert all('/' not in n and '\\' not in n and n not in ('.','..') for n in z.namelist())
+              z.extractall(folder/'assets')
+          sums=dict((l.split('  ',1)[1],l.split('  ',1)[0]) for l in (folder/'assets/SHA256SUMS.txt').read_text().splitlines())
+          for p in (folder/'assets').iterdir():
+              if p.name!='SHA256SUMS.txt':
+                  assert hashlib.sha256(p.read_bytes()).hexdigest()==sums[p.name],p.name
+          PY
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-ui-core.txt pytest
+      - run: python -m pip install --no-deps -r requirements-ui-qfluent.txt
+      - name: Licence and public-source privacy checks
+        run: |
+          python -X utf8 tools/check_license.py
+          python -X utf8 tools/package_release.py --check-only
+          python -X utf8 tools/verify_release_archive.py --source build/publication-candidate/assets/OpenQQDot-Source-1.0.0-beta.3.zip
+      - name: Full isolated Windows source suite
+        run: python -X utf8 -m pytest -q tests --junitxml=build/publication-full.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: beta3-source-junit
+          path: build/publication-full.xml
+          if-no-files-found: ignore
+      - name: Update reports and checksums from actual completed results
+        run: |
+          python - <<'PY'
+          import hashlib,json,os,pathlib,xml.etree.ElementTree as ET
+          root=ET.parse('build/publication-full.xml').getroot()
+          suites=list(root.iter('testsuite'))
+          counts={k:sum(int(s.get(k,'0')) for s in suites) for k in ('tests','failures','errors','skipped')}
+          assert counts['tests']>2400 and counts['failures']==counts['errors']==0,counts
+          counts['passed']=counts['tests']-counts['skipped']
+          counts['environment']='GitHub Windows runner with installed Python 3.12 and declared test dependencies; not a zero-dependency Windows machine'
+          counts['commit']=os.environ['GITHUB_SHA']
+          counts['url']='https://github.com/'+os.environ['GITHUB_REPOSITORY']+'/actions/runs/'+os.environ['GITHUB_RUN_ID']
+          folder=pathlib.Path('build/publication-candidate/assets')
+          p=folder/'Public-update-validation.json'; data=json.loads(p.read_text());data['cloud_full_suite']=counts;p.write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding='utf-8')
+          notes=(pathlib.Path('docs/RELEASE_BETA3.md')).read_text()
+          notes+='\n\n## 本次完成的 Windows 云端源码回归\n\n'
+          notes+=str(counts['passed'])+' 项通过，'+str(counts['skipped'])+' 项跳过，0 失败、0 错误。[查看本轮实际记录]('+counts['url']+')。这是已安装开发依赖的 GitHub Windows 环境，不能当作空白 Windows 首装或实体手机验收。原失败记录保留。\n'
+          (folder/'Release-notes.md').write_text(notes,encoding='utf-8')
+          def digest(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+          p=folder/'release_manifest.json';manifest=json.loads(p.read_text());manifest['cloud_source_validation']=counts
+          for row in manifest['artifacts']:
+              a=folder/row['name'];row['size']=a.stat().st_size;row['sha256']=digest(a)
+          p.write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
+          (folder/'SHA256SUMS.txt').write_text(''.join(digest(a)+'  '+a.name+'\n' for a in sorted(folder.iterdir()) if a.name!='SHA256SUMS.txt'),encoding='utf-8')
+          print(json.dumps(counts,ensure_ascii=False))
+          PY
+          git diff --exit-code
+      - name: Publish the verified Windows revision and documentation
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EXPECTED_OLD_TAG: 7b014685bf326daf51bb66d4b7d6f00bc862dd76
+        run: |
+          gh release upload v1.0.0-beta.3 build/publication-candidate/assets/* --clobber
+          gh release edit v1.0.0-beta.3 --notes-file build/publication-candidate/assets/Release-notes.md
+          current=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v1.0.0-beta.3" --jq .object.sha)
+          test "$current" = "$EXPECTED_OLD_TAG"
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/v1.0.0-beta.3" -f sha="$GITHUB_SHA" -F force=true >/dev/null

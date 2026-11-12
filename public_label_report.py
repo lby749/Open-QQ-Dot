@@ -52,9 +52,10 @@ def main():
         for s, c, p, tags, usable, knn, ok in picked:
             text = '<br>'.join(html.escape(x) for x in lines(s, c, p))
             mark = {1: '<span class="ok">一致</span>', 0: '<span class="bad">待复核</span>'}.get(ok, '无向量')
+            knn_tags = ''.join(f"<span class='tag knn'>{t}</span>" for t in json.loads(knn or '[]'))
             out.append(f'<tr><td>{html.escape(s)}<br>{html.escape(c)}</td><td>{html.escape(p)}</td><td>{text}</td>'
                        f'<td>{"".join(f"<span class=tag>{t}</span>" for t in json.loads(tags))}</td>'
-                       f'<td>{"".join(f"<span class=\'tag knn\'>{t}</span>" for t in json.loads(knn or "[]"))}</td>'
+                       f'<td>{knn_tags}</td>'
                        f'<td>{mark}{"" if usable else "<br>不适合当示例"}</td></tr>')
         out.append('</table>')
     source.close()

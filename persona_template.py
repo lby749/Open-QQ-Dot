@@ -235,7 +235,8 @@ def mark_usage(template):
         lines = sorted({b for b in bubbles if needle in b and 4 <= len(re.sub(r'\[[^\]]*\]', 'X', b)) <= 18}, key=len)[:2]
         label = mark if mark in emoji else f'[[QQ表情:{mark}]]'
         sense = MARK_SENSE.get(mark, '看例句')
-        parts.append(f"{label}={sense} e.g.{'/'.join('「' + re.sub(r'\[表情:/?([^\]]+)\]', r'[\1]', b) + '」' for b in lines)}")
+        examples = '/'.join('「' + re.sub(r'\[表情:/?([^\]]+)\]', r'[\1]', b) + '」' for b in lines)
+        parts.append(f"{label}={sense} e.g.{examples}")
     return 'TA_MARKS: ' + '; '.join(parts) + '; LINE_WITHOUT_THAT_FEELING -> NO_MARK' if parts else ''
 
 

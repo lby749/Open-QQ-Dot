@@ -1,78 +1,63 @@
-# Building and Testing Open QQ Dot
+# Open QQ Dot 构建与验证说明
 
-Open QQ Dot has **one source tree**. The same tree builds the desktop application, the public source archive, the green package, and the Windows installer. There is no separate "application source" copy.
+本项目维护同一份应用源码，打包时分别生成桌面应用、公开源码 ZIP、绿色包和 Windows 安装器。正式蓝色安卓客户端位于 `android/`。
 
-## Requirements
+## 普通用户
 
-- Windows 11 x64 for the installer build and the real GUI/QQ checks.
-- Python 3.11, 3.12, or 3.13. The installer uses an isolated `.venv` (managed by `uv` when no compatible system Python is available).
-- Node.js only if you build the optional NapCat runtime; it is **not** required to build or run Open QQ Dot itself.
-- `uv` for the installer build (`tools/build_windows_installer.py`).
-- PyInstaller for the Windows installer (installed by the build script's environment).
-- Linux/macOS source checks use Python 3.12 and do not require PySide6 or Tk; Qt-only tests are conditionally skipped.
+无需先安装 Python。Windows 用户从[发行页](https://github.com/lby749/Open-QQ-Dot/releases/tag/v1.0.0-beta.3)下载一键配置安装器，或完整解压绿色包并运行其中的 `Open QQ Dot.exe`。模型、账号、外部服务和可选 QQ 运行时按需要配置。
 
-## One-time environment
+## 源码开发环境
 
-```bash
-python -m venv .venv
-# Windows: .venv\Scripts\python -m pip install -r requirements.txt
-# Linux/macOS: .venv/bin/python -m pip install -r requirements.txt
-```
-
-Optional model, voice, browser, and UI dependencies are in the separate `requirements-*.txt` files. They are not required for source collection or packaging.
-
-## Verify the source
-
-```bash
-python -m pytest --collect-only -q tests
-python -m pytest -q tests
-python tools/check_license.py
-python tools/package_release.py --check-only
-```
-
-`--check-only` scans the complete public source tree, including `tests/`, `tools/`, and `docs/`. It must not report a secret or private-data leak.
-
-## Build the public source archive
-
-```bash
-python tools/package_release.py --root . --output ../OpenQQDots-原代码.zip
-```
-
-This includes the application source, `tests/`, `tools/`, public docs, `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `BUILDING.md`, requirements files, and `THIRD_PARTY_NOTICES.md`. It excludes runtime data, virtual environments, model weights, logs, shortcuts, generated test artifacts, NapCat itself, and all `.exe` launchers/binaries.
-
-## Build the installed application / green package
-
-The installed application must not ship tests, build tools, or developer docs:
-
-```bash
-python tools/package_release.py --root . --include-launcher --app-only --output ../application.zip
-```
-
-`--app-only` excludes `tests/`, `tools/`, `docs/`, `examples/`, and `.github/` while retaining the application, launcher, assets, licenses, README, and notices. The installer build calls this mode automatically.
-
-## Build the Windows installer
-
-```bash
-python tools/build_windows_installer.py             # app payload, no NapCat runtime
-python tools/build_windows_installer.py --with-runtime  # only with a local qq-runtime tree
-```
-
-The installer embeds `application.zip`, creates an isolated `.venv` on the target machine, and preserves `friends/`, `data/`, `workspaces/`, `exports/`, and `capsules/` during upgrade and uninstall. It never downloads or bundles NapCat unless the operator explicitly provides/accepts a runtime.
-
-## Repository layout
+应用支持 Python 3.11—3.13，安装器缺少合适的本机 Python 时准备私有 Python 3.12。先建立独立环境，再安装界面依赖与测试工具：
 
 ```text
-main.py, house_qt/, assets/...    application and Qt desktop UI
-tests/                            regression and platform tests
-tools/                            packaging, license, release verification, build helpers
-docs/                             architecture and feature documentation
-windows_installer.py, installer_ui.py, "Open QQ Dot.spec"
-                                  Windows installer source
-requirements*.txt                 runtime and optional dependency sets
+python -m venv .venv
+.venv\Scripts\python -m pip install -r requirements-ui-core.txt pytest
+.venv\Scripts\python -m pip install --no-deps -r requirements-ui-qfluent.txt
 ```
 
-## Platform notes
+macOS/Linux 请改用 `.venv/bin/python`。Fluent 组件需要单独安装；只安装基础 requirements 不能收集全部界面测试。使用 `--no-deps` 是为了沿用已装的 Qt Essentials/Addons，避免额外引入未使用的 WebEngine。
 
-- Linux: Qt/Tk tests skip when those runtimes are absent; DPAPI, PowerShell, and DotLink launcher tests are Windows-only. Use the Linux commands above and expect conditional skips, not collection errors.
-- Windows: run the full suite with `python -X utf8 -m pytest -q tests`; the installer lifecycle and GUI/QQ checks require Windows.
-- API key storage uses Windows DPAPI. On non-Windows platforms the program reports that secure key storage is unavailable instead of crashing.
+本地向量、语音、浏览器及其他模型的依赖按对应 `requirements-*.txt` 安装；缺少可选能力时，应记录跳过原因，不能把跳过写成验收通过。
+
+## 验证
+
+```text
+python -X utf8 -m pytest --collect-only -q tests
+python -X utf8 -m pytest -q tests
+python -X utf8 tools/run_release_checks.py
+python -X utf8 tools/check_license.py
+python -X utf8 tools/package_release.py --check-only
+```
+
+回归入口使用 pytest 执行混合用例，确保隔离夹具和普通函数用例生效。测试只能使用临时身份和资料目录。真实模型、QQ、摄像头及实体手机另行授权并验证；源码测试不等于真实环境全部验收。
+
+## 公开源码与应用包
+
+```text
+python tools/package_release.py --root . --output ../OpenQQDot-source.zip
+python tools/verify_release_archive.py --source ../OpenQQDot-source.zip
+python tools/package_release.py --root . --include-launcher --app-only --output ../OpenQQDot-portable.zip
+```
+
+源码包包含应用源码、蓝色安卓源码、测试、工具、公开文档及第三方许可证。过滤运行数据、账号与登录态、工作区、日志、模型权重、本机依赖环境、签名私钥，以及 `build`、`target` 和编译类文件等缓存。安卓源码的 `data` 包是程序源码，仍需保留；不能为过滤私人数据而删掉它。
+
+绿色包与安装负载使用 `--app-only`，不附带测试和开发工具。启动 EXE 必须与完整资源目录一起使用。
+
+## Windows 安装器
+
+使用 Windows x64、uv 与 PyInstaller；构建环境需要上述依赖及合法的第三方授权文件：
+
+```text
+python tools/build_windows_installer.py
+```
+
+安装器内嵌经过过滤的应用负载，在目标目录建立私有环境。升级和修复保留用户数据。源码、安装器负载、最终附件和 Git 仓库需要分别核对，不能只依赖 Git 忽略规则。
+
+## 安卓与其他平台
+
+蓝色 APK 的版本、签名和构建步骤见 [安卓构建说明](android/README_构建与版本.md)，实际边界见 [安卓发布检查](docs/ANDROID_BETA3.md)。签名私钥与 `local.properties` 不提交。
+
+macOS/Linux 目前提供源码启动入口，真实图形桌面、系统权限和原生发行包仍需分别验收。完整限制见 [KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md)。
+
+感谢您的支持，如果有帮助的话，请点一个 STAR，谢谢。当前项目仍不完善，欢迎通过[问题反馈与建议](https://github.com/lby749/Open-QQ-Dot/issues/new/choose)提出改进，非常感谢。

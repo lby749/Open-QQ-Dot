@@ -3,7 +3,6 @@ import os
 from pathlib import Path
 import sys
 import tempfile
-import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULES = (
@@ -26,11 +25,11 @@ def main():
             os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
             os.chdir(temporary)
             try:
-                suite = unittest.TestSuite(unittest.defaultTestLoader.loadTestsFromName(name) for name in MODULES)
-                result = unittest.TextTestRunner(verbosity=2).run(suite)
+                import pytest
+                result = pytest.main(['-q', *[str(ROOT/'tests'/f'{name}.py') for name in MODULES]])
             finally:
                 os.chdir(previous)
-        return 0 if result.wasSuccessful() else 1
+        return int(result)
     finally:
         if previous_home is None:
             os.environ.pop('QQ_BRIDGE_HOME', None)
