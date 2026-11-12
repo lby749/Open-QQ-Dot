@@ -1,5 +1,8 @@
 name: Publish checked BETA assets
 on:
+  push:
+    branches: [main]
+    paths: ['.github/release-candidate.json']
   workflow_dispatch:
     inputs:
       candidate_url:
@@ -27,7 +30,10 @@ jobs:
         run: |
           python - <<'PY'
           import hashlib, os, pathlib, re, urllib.request, zipfile
-          url, digest = os.environ['CANDIDATE_URL'], os.environ['CANDIDATE_SHA256']
+          candidate = pathlib.Path('.github/release-candidate.json')
+          config = __import__('json').loads(candidate.read_text()) if candidate.exists() else {}
+          url = os.environ.get('CANDIDATE_URL') or config.get('url', '')
+          digest = os.environ.get('CANDIDATE_SHA256') or config.get('sha256', '')
           assert url.startswith('https://') and re.fullmatch('[0-9a-f]{64}', digest)
           urllib.request.urlretrieve(url, '/tmp/candidate.zip')
           assert hashlib.sha256(pathlib.Path('/tmp/candidate.zip').read_bytes()).hexdigest() == digest
@@ -35,13 +41,20 @@ jobs:
               assert z.testzip() is None
               assert all('/' not in n and '\\' not in n and n not in ('.', '..') for n in z.namelist())
               z.extractall('/tmp/release')
-          with zipfile.ZipFile('/tmp/release/OpenQQDot-Source-1.0.0-beta.3.zip') as z:
+          manifest = __import__('json').loads(pathlib.Path('/tmp/release/release_manifest.json').read_text())
+          version = manifest['version']
+          assert re.fullmatch(r'\d+\.\d+\.\d+-beta\.\d+', version)
+          assert manifest['repository'] == 'lby749/Open-QQ-Dot'
+          assert manifest['status'] == 'BETA' and manifest['private_runtime_data_included'] is False
+          with open(os.environ['GITHUB_ENV'], 'a') as env:
+              env.write(f'RELEASE_VERSION={version}\n')
+          with zipfile.ZipFile(f'/tmp/release/OpenQQDot-Source-{version}.zip') as z:
               assert z.testzip() is None
               for n in z.namelist():
                   p = pathlib.PurePosixPath(n)
                   assert p.parts[0] == 'Open-QQ-Dot' and '..' not in p.parts
                   rel = pathlib.Path(*p.parts[1:])
-                  if not rel.parts or str(rel).startswith('.github/workflows/'):
+                  if not rel.parts or rel.parts[0] == '.github':
                       continue
                   dest = pathlib.Path.cwd() / rel
                   dest.parent.mkdir(parents=True, exist_ok=True)
@@ -53,6 +66,8 @@ jobs:
         run: |
           python -X utf8 tools/package_release.py --check-only
           python -X utf8 tools/check_license.py
+          python -X utf8 tools/verify_release_archive.py --source "/tmp/release/OpenQQDot-Source-${RELEASE_VERSION}.zip"
+          python -X utf8 tools/verify_release_archive.py "/tmp/release/OpenQQDot-Portable-Windows-x64-${RELEASE_VERSION}.zip"
           cd /tmp/release
           sha256sum -c SHA256SUMS.txt
       - name: Commit public source and publish preview assets
@@ -63,6 +78,8 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add .
-          git commit -m 'Release audited Open QQ Dot 1.0.0-beta.3 source and documentation'
+          git commit -m "Release checked Open QQ Dot ${RELEASE_VERSION} source and documentation"
           git push origin HEAD:main
-          gh release create v1.0.0-beta.3 /tmp/release/* --prerelease --target "$(git rev-parse HEAD)" --title 'Open QQ Dot 1.0.0-beta.3 · BETA 测试版' --notes-file docs/RELEASE_BETA3.md
+          notes=$(python -c "import os;print('docs/RELEASE_BETA'+os.environ['RELEASE_VERSION'].rsplit('.',1)[-1]+'.md')")
+          gh release create "v${RELEASE_VERSION}" /tmp/release/* --prerelease --target "$(git rev-parse HEAD)" --title "Open QQ Dot ${RELEASE_VERSION} · BETA 测试版" --notes-file "$notes"
+
