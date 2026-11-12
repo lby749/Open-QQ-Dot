@@ -15,6 +15,7 @@ jobs:
         with:
           python-version: '3.13'
       - run: python -m pip install -r requirements-ui.txt pytest pypdf onnx
+      - run: python -m pip install --no-deps -r requirements-ui-qfluent.txt
       - name: License check
         run: python -X utf8 tools/check_license.py
       - name: Full test suite

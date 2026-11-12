@@ -1,8 +1,17 @@
 # Open QQ Dot 1.0.0-beta.3
 
-Open QQ Dot 是本地运行的中文智能助手。你可以在 QQ 中聊天、交办任务，在电脑控制台管理好友、工作流、长期研究和多个智能体，并用蓝色安卓客户端查看与协作。
+Open QQ Dot 是在自己电脑上运行的中文自主智能助手：把 QQ 中的需求拆成任务，调用获准工具执行，并保留进度、产物和验收记录。桌面控制台统一管理好友、模型、工作流和多智能体分工，蓝色安卓客户端配对后提供查看与协作入口。
 
 <p align="center"><img src="https://raw.githubusercontent.com/lby749/Open-QQ-Dot/main/assets/brand/project-cover.png" width="720" alt="Open QQ Dot 项目配图：星云"/></p>
+
+## 主要功能与优势
+
+- **自主规划与执行**：从需求到步骤、工具调用与产物验收，过程可以追踪。
+- **多智能体协作**：用可编辑分支组织成员，选择模型、思考强度及群聊、私聊或内部邮箱汇报。
+- **长期任务与研究**：以阶段、预算、检查点和证据组织持续工作，遇到不确定的副作用先核查。
+- **可复用的工作流**：把成功任务和人工纠正整理为可编辑流程，配合任务胶囊保存与复用。
+- **好友隔离与按需接入**：本机管理资料，分别控制记忆和权限；模型权重可共用，工具通过 MCP 按需提供。
+- **多端配合**：QQ 交办、桌面管理、手机查看与协作；手机端依赖电脑保持运行。
 
 ## 下载与安装
 
@@ -10,12 +19,12 @@ Open QQ Dot 是本地运行的中文智能助手。你可以在 QQ 中聊天、�
 
 | 文件 | 用途 |
 |---|---|
-| `OpenQQDot-Setup-Windows-x64-1.0.0-beta.3.exe` | Windows 10 / 11 x64 一键配置启动器；无需预先安装 Python，首次按需下载依赖 |
-| `OpenQQDot-Portable-Windows-x64-1.0.0-beta.3.zip` | 完整解压，双击 `Open QQ Dot.exe`；需要首次联网准备私有运行环境 |
-| `OpenQQDot-Android-FOSS-arm64-1.0.0-beta.3.apk` | Android 13+、arm64，蓝色正式客户端，不包含 Google OCR |
-| `OpenQQDot-Android-GMS-arm64-1.0.0-beta.3.apk` | 同一蓝色客户端，包含 Google OCR 支持；与 FOSS 二选一 |
-| `OpenQQDot-Source-1.0.0-beta.3.zip` | 完整公开源码、测试、工具、第三方许可证和构建说明 |
-| `SHA256SUMS.txt` | 最终文件的 SHA-256 校验清单 |
+| [OpenQQDot-Setup-Windows-x64-1.0.0-beta.3.exe](https://github.com/lby749/Open-QQ-Dot/releases/download/v1.0.0-beta.3/OpenQQDot-Setup-Windows-x64-1.0.0-beta.3.exe) | Windows 10 / 11 x64 一键配置启动器；无需预先安装 Python，首次按需下载依赖 |
+| [OpenQQDot-Portable-Windows-x64-1.0.0-beta.3.zip](https://github.com/lby749/Open-QQ-Dot/releases/download/v1.0.0-beta.3/OpenQQDot-Portable-Windows-x64-1.0.0-beta.3.zip) | 完整解压，双击 `Open QQ Dot.exe`；需要首次联网准备私有运行环境 |
+| [OpenQQDot-Android-FOSS-arm64-1.0.0-beta.3.apk](https://github.com/lby749/Open-QQ-Dot/releases/download/v1.0.0-beta.3/OpenQQDot-Android-FOSS-arm64-1.0.0-beta.3.apk) | Android 13+、arm64，蓝色正式客户端，不包含 Google OCR |
+| [OpenQQDot-Android-GMS-arm64-1.0.0-beta.3.apk](https://github.com/lby749/Open-QQ-Dot/releases/download/v1.0.0-beta.3/OpenQQDot-Android-GMS-arm64-1.0.0-beta.3.apk) | 同一蓝色客户端，包含 Google OCR 支持；与 FOSS 二选一 |
+| [OpenQQDot-Source-1.0.0-beta.3.zip](https://github.com/lby749/Open-QQ-Dot/releases/download/v1.0.0-beta.3/OpenQQDot-Source-1.0.0-beta.3.zip) | 完整公开源码、测试、工具、第三方许可证和构建说明 |
+| [SHA256SUMS.txt](https://github.com/lby749/Open-QQ-Dot/releases/download/v1.0.0-beta.3/SHA256SUMS.txt) | 最终文件的 SHA-256 校验清单 |
 
 Windows 首次安装请选择可写目录，已有用户选择原目录修复或升级并保留备份。安装器不会附带开发者的 QQ 登录、密钥、聊天或模型权重。APK 沿用旧测试版证书，`versionCode=5`，可覆盖同证书旧版；不要先卸载以免丢失配对数据。两个 APK 包名相同，不能共存。当前 Windows EXE 未作商业代码签名，安卓沿用测试签名。
 
@@ -42,6 +51,12 @@ Windows 最终应用快照在独立 Windows Sandbox 内完成真实首装、覆�
 Android 本轮构建、签名与模拟器结果见[安卓发布检查](https://github.com/lby749/Open-QQ-Dot/blob/main/docs/ANDROID_BETA3.md)。实体手机、真实扫码质量、厂商后台保活、Google OCR 准确率、语音通话、连续多日无人值守和所有硬件组合尚未完整验收。完整状态见[功能目录](https://github.com/lby749/Open-QQ-Dot/blob/main/docs/FEATURES.md)与[已知问题](https://github.com/lby749/Open-QQ-Dot/blob/main/docs/KNOWN_ISSUES.md)。
 
 公开源码和发行包排除好友、登录态、数据库、工作区、原始聊天、模型权重、签名私钥及本机环境。模式扫描不是完整安全审计；不要把旧接口直接暴露公网。项目按 GPL-3.0-or-later 分发，第三方组件保留各自许可。
+
+## 公开发布复核
+
+公开后复核发现源码 ZIP 的第三方 Java 库夹带了 `target` 编译缓存和本机构建路径清单。仓库本身未跟踪这些缓存；现已在共同打包过滤和独立归档检查中排除 `target` 与编译类文件，并保留上游 Java 源码。账号、密钥、聊天、登录目录、数据库和模型权重不随公开包提供。
+
+云端检查另暴露了测试环境漏装 `qfluentwidgets` 和本地推理测试依赖不完整的问题。现已对齐安装器的分步依赖准备，并让推理检查使用 pytest，以应用相同的隔离夹具。此前云端失败记录保留；本次定向复核 56 项通过，不将其冒充云端完整回归全部通过。
 
 ## 反馈
 

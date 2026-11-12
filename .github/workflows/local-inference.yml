@@ -26,8 +26,5 @@ jobs:
       - name: Native PyTorch on macOS
         if: runner.os == 'macOS'
         run: python -m pip install torch==2.7.1
-      - run: python -m pip install transformers==4.51.3 safetensors sentencepiece psutil numpy jsonschema
-      - run: python -X utf8 -m unittest discover -s tests -p test_inference_devices.py
-      - run: python -X utf8 -m unittest discover -s tests -p test_local_backend_cpu.py
-      - run: python -X utf8 -m unittest discover -s tests -p test_small_models.py
-      - run: python -X utf8 -m unittest discover -s tests -p test_message_classifier.py
+      - run: python -m pip install transformers==4.51.3 safetensors sentencepiece psutil numpy jsonschema pytest
+      - run: python -X utf8 -m pytest -q tests/test_inference_devices.py tests/test_local_backend_cpu.py tests/test_small_models.py tests/test_message_classifier.py

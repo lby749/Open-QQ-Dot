@@ -1,115 +1,42 @@
-# Open QQ Dot
+# Open QQ Dot：主要功能与使用优势
 
-<img src="assets/app-icon.png" width="112" alt="Open QQ Dot">
+Open QQ Dot 是在自己电脑上运行的中文自主智能助手。你可以通过 QQ 提出需求，由智能体规划步骤、调用获准工具、产出文件并记录验收结果；电脑控制台负责管理，配对手机提供查看与协作入口。
 
-**A local Windows Dot companion that interfaces with multiple LLM backends and imitates diverse conversational styles.**
+当前为 **1.0.0-beta.3 测试版**。下载见[发行页](https://github.com/lby749/Open-QQ-Dot/releases/tag/v1.0.0-beta.3)，具体成熟度见[功能目录](docs/FEATURES.md)。
 
-Open QQ Dot embeds an AI companion into your daily QQ conversations: remembering dialogue history, speaking in your configured voice, and performing file and command operations on your local PC upon explicit authorization.
+## 主要功能
 
-You choose the model backends, configure independent personas, memories, and permissions for each friend, and manage everything through the desktop native interface or the mobile web dashboard.
-
-This is an independent open-source project following the "Dot" personal assistant paradigm, with no official affiliation with OpenAI.
-
----
-
-## 1. Local Work Environment
-
-Open QQ Dot runs directly on your Windows PC. Dialogue histories, memories, style templates, and task files reside locally; host tools execute directly on this computer, eliminating the need for separate cloud infrastructure.
-
-Local deployment does not mean you are forced to run heavy local LLMs. You can route inference to cloud models via CLIs (Codex CLI, Claude CLI, Antigravity CLI) or APIs, or integrate local inference engines on demand. When using cloud models, the prompt context required for generation is sent to your selected provider.
-
-Message processing and autonomous tasks continue as long as your computer and the bridge are running; tasks do not persist on external servers once the local machine is powered down.
-
----
-
-## 2. Flexible Model Integration
-
-Dedicated configuration panels are provided for Codex CLI, Claude CLI, Antigravity CLI, and universal REST APIs.
-
-The API interface supports standard OpenAI Chat Completions, OpenAI Responses, and Anthropic Messages formats, permitting multiple endpoints, model identifiers, and API keys.
-
-Service endpoints are organized into three primary categories:
-
-| Category | Purpose |
+| 功能 | 使用方式与价值 |
 |---|---|
-| **Model API** | Conversational chat, synthesis, and reasoning tasks |
-| **Retrieval API** | Text embeddings, vector memory retrieval, and candidate reranking |
-| **Tool API** | External HTTP web services integrated as assistant tools |
+| 自主规划与任务执行 | 在工作台交办要求，或在 QQ 中提出明确任务；查看步骤、浏览器及本机工具调用、文件产物与验收记录 |
+| 多智能体分工 | 用可编辑的入口和分支节点组织协作，为成员配置模型、思考强度、职责和汇报方式，并观察实际执行与交接 |
+| 长期目标与研究 | 把目标分成阶段，设置预算、检查点、验收条件和停止条件，保留实验、决策与恢复记录 |
+| 工作流与任务胶囊 | 将已验收的成功任务和人工纠正整理为可编辑流程，复用、修改或导入；普通聊天不自动等同于任务经验 |
+| 好友独立的人设与记忆 | 分别配置人设、关系、回复偏好、任务及工具权限，按身份隔离记忆、向量集合、经验和检索结果 |
+| QQ、桌面与手机 | QQ 负责交流和交办，桌面统一管理，蓝色安卓客户端配对后按权限查看与参与协作 |
 
-Each service maintains its own account credentials and keys. Models can be swapped dynamically while retaining friend memory stores and persona configurations.
+## 使用优势
 
----
+- **过程可以检查。** 任务计划、工具执行、文件结果和交接记录有各自入口，模型声称完成后仍需验收。
+- **模型与工具可以组合。** 统一管理 CLI、API 和外部智能体；通过 MCP 按需提供配置、能力和工具，减少重复附带无关上下文。
+- **资料保留在自己电脑上。** 本地管理好友、聊天、记忆和工作区；使用云端模型时，必要内容仍按配置发送给所选服务。
+- **共享权重，隔离业务数据。** 不必为每位好友复制相同模型文件；各好友的权限、向量集合、缓存和原文仍分开管理。
+- **从完成一次到复用流程。** 成功步骤可以整理成工作流；长期任务可以按阶段继续，遇到不确定的外部操作先核查，降低重复执行风险。
 
-## 3. Customizable Conversational Styles
+## 怎样开始
 
-Conversational style can be tailored per friend: concise and direct, warm and empathetic, casual colloquial, or custom persona prompts.
+1. Windows 下载一键配置安装器，或完整解压绿色包后运行其中的 `Open QQ Dot.exe`；无需提前安装 Python。
+2. 配置自己有权限使用的模型、工具和工作目录。
+3. 在 QQ 连接页配置官方机器人；原有个人账号连接入口保留。使用自己的 QQ 账号。有风险。
+4. 为好友设置人设、记忆与权限，从一个可核验的小任务开始。
+5. 需要多智能体分工时配置协作流程；需要手机参与时安装蓝色 APK 并配对。
 
-Beyond manual persona prompts, style templates can be extracted and trained from chat export files. Templates combine message length distributions, pacing, particles, emojis, laughter expressions, and catchphrases to shape subsequent generation.
+## 当前边界
 
-For example, when responding to "I had such a tiring day today":
+电脑需要保持运行；手机端依赖电脑服务。兼容某种模型不等于该账号已登录或有额度。已有真实模型、QQ、干净 Windows 沙箱和 Android 模拟器的分项结果，不能推导为任意模型、全部手机或连续多日无人值守均已通过。完整科研论文闭环、语音通话及 macOS/Linux 原生发行等仍有未完成或未验证部分。
 
-| Style | Illustrative Response Example |
-|---|---|
-| **Concise & Direct** | Take a rest now. We can handle the remaining work tomorrow. |
-| **Warm & Attentive** | Were you busy all day? Sit down, relax, and grab a glass of water. |
-| **Casual & Energetic** | Time to lie down! Your battery must be at zero percent haha. |
+详细说明：[本版发行说明](docs/RELEASE_BETA3.md) · [已知问题](docs/KNOWN_ISSUES.md) · [运行智能体接入](docs/AGENT_INTEGRATION.md) · [贡献智能体指南](AGENTS.md)。
 
-Templates can be synthesized, imported, exported, and bound to specific friends. Proactive greeting prompts can be configured individually.
+当前项目还不是很完善。如果有问题或改进建议，欢迎通过[问题反馈与建议](https://github.com/lby749/Open-QQ-Dot/issues/new/choose)提出，非常感谢。
 
----
-
-## 4. Comprehensive Features
-
-Open QQ Dot includes:
-- Long-term memory extraction and semantic retrieval
-- Friend preference notes and topical knowledge stores
-- Dialogue histories and emotion tracking
-- Custom emoji and sticker collections
-- Proactive engagement, scheduled care, and conversation continuations
-
-Each friend operates within an isolated context and permissions boundary, managed via the desktop GUI or the mobile House Web UI.
-
----
-
-## 5. Granular Tool Authorization
-
-Each friend features an independent "Local Workspace" toggle (disabled by default). When enabled, the assistant can read, write, and list text files within that friend's dedicated workspace directory (`workspaces/<QQ>/`) and launch URLs in the default browser.
-
-Executing terminal commands requires an additional explicit permission toggle. Commands run under the current Windows user privileges; workspace paths do not constitute a kernel-level OS sandbox.
-
-For full feature scope and desktop automation roadmap, see [Feature Matrix](docs/dot_feature_matrix.md).
-
----
-
-## 6. Lightweight Footprint & Optional Local Models
-
-The base release bundles no model weights and downloads none automatically. Default message classification and retrieval rely on rule heuristics, keyword indexing, and BM25 scoring. For enhanced semantic precision, configure a cloud embedding API or download local quantized models.
-
-You do not need heavy local GPUs to run the full chat and management experience.
-
----
-
-## 7. Summary
-
-> Open QQ Dot is a locally deployed Dot-style AI companion. Accessible through QQ, it interfaces with diverse LLM providers, mimics customizable conversational styles, maintains persistent memories and proactive interactions, and provides desktop and mobile dashboards. When authorized, it executes local file and terminal tasks.
-
----
-
-## 8. Documentation Index
-
-- Setup & Configuration: [README.md](README.md)
-- Contributor Guide: [AGENTS.md](AGENTS.md)
-- Local Inference: [docs/model_recommendations_and_fallbacks.md](docs/model_recommendations_and_fallbacks.md)
-- Tools & Sandbox Permissions: [docs/tools_and_permissions.md](docs/tools_and_permissions.md)
-
-Code is licensed under the GNU General Public License v3.0 or later (GPL-3.0-or-later); third-party libraries and assets adhere to their respective licenses.
-
-
-### Provider-neutral local Agent interoperability (2026-10-24)
-
-The persistent Agent mailbox now supports both MCP sessions and a loopback-only authenticated
-HTTP/JSON adapter with a small Python SDK. Agents are not limited to Claude Code or Codex: an
-operator-provisioned external CLI, editor extension or custom Agent can participate without
-assuming any unsupported vendor API. See `docs/UNIVERSAL_AGENT_INTEROP.md` for security, session
-presence, structured handoffs, caveats and tests. Remote federation and direct integration with
-third-party proprietary IDE sessions are **not** implemented.
+感谢您的支持，如果有帮助的话，请点一个 [STAR](https://github.com/lby749/Open-QQ-Dot)，谢谢。

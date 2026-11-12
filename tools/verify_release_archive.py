@@ -7,7 +7,7 @@ import zipfile
 from pathlib import Path
 
 FORBIDDEN_PARTS = {"/friends/", "/workspaces/", "/qq-runtime/", "/state/",
-                   "/docs/", "/.git/", "/__pycache__/", "/.pytest"}
+                   "/docs/", "/.git/", "/__pycache__/", "/.pytest", "/target/"}
 MODEL_SUFFIXES = (".gguf", ".onnx", ".safetensors", ".pt", ".pth", ".bin")
 SECRET_NAMES = ("friends.json", ".env", "id_rsa", "auth.json", "cookies.txt",
                 "local.json", ".source-nonce", ".source.lock")
@@ -30,6 +30,8 @@ def check(path: Path, *, source: bool = False) -> list[str]:
                 errors.append('internal handoff document: ' + name)
             if name.casefold().endswith(MODEL_SUFFIXES):
                 errors.append("model file: " + name)
+            if name.casefold().endswith('.class'):
+                errors.append("compiled cache: " + name)
             if Path(name).name.casefold() in SECRET_NAMES:
                 errors.append("private file: " + name)
     return errors

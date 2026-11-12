@@ -65,7 +65,11 @@ def test_blue_android_source_is_published_without_discarded_app_cache_or_signing
     root.mkdir()
     for name in ('android/app/src/main/MainActivity.kt', 'mobile/app/Discarded.kt',
                  'android/.gradle/cache.bin', 'android/local.properties', 'android/keystore.properties',
-                 'android/private.jks', 'android/private.keystore'):
+                 'android/private.jks', 'android/private.keystore',
+                 'android/vendor/ngrok-java/target/classes/Local.class',
+                 'android/vendor/ngrok-java/target/sources.txt',
+                 'android/vendor/ngrok-java/target/local.jar', 'android/Local.class',
+                 'android/vendor/ngrok-java/src/main/java/Library.java'):
         path = root/name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text('// synthetic fixture', 'utf-8')
@@ -73,7 +77,10 @@ def test_blue_android_source_is_published_without_discarded_app_cache_or_signing
     package_release.create_clean_package(root, source)
     package_release.create_clean_package(root, app, app_only=True)
     with zipfile.ZipFile(source) as archive:
-        assert archive.namelist() == ['Open-QQ-Dot/android/app/src/main/MainActivity.kt']
+        assert set(archive.namelist()) == {
+            'Open-QQ-Dot/android/app/src/main/MainActivity.kt',
+            'Open-QQ-Dot/android/vendor/ngrok-java/src/main/java/Library.java',
+        }
     with zipfile.ZipFile(app) as archive:
         assert archive.namelist() == []
 

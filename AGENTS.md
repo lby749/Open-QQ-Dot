@@ -1,6 +1,6 @@
 # Open QQ Dot — 贡献智能体指南（BETA）
 
-本仓库是本地 QQ 助手、任务执行和多智能体协作应用。**BETA 不代表全功能、全模型、全平台均已验收。** 功能事实见 [docs/FEATURES.md](docs/FEATURES.md)，限制见 [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md)。这里只提供开发所需的最小地图；运行中智能体的 MCP 接入见 [docs/AGENT_INTEGRATION.md](docs/AGENT_INTEGRATION.md)。
+本仓库是在本机运行的中文自主智能体应用，提供 QQ 交办、任务规划与执行、工作流、阶段式研究、多智能体协作和手机配对入口。资料按好友与任务作用域管理；模型权重可以共用，运行工具通过授权和 MCP 按需提供。**BETA 不代表全功能、全模型、全平台均已验收。** 功能事实见 [docs/FEATURES.md](docs/FEATURES.md)，限制见 [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md)。这里只提供开发所需的最小地图；运行中智能体的 MCP 接入见 [docs/AGENT_INTEGRATION.md](docs/AGENT_INTEGRATION.md)。
 
 ## 修改原则
 

@@ -27,4 +27,9 @@ def test_source_android_data_package_is_not_private_runtime_data(tmp_path):
     assert check(archive, source=True) == []
     with zipfile.ZipFile(archive, 'a') as package:
         package.writestr('Open-QQ-Dot/data/private.json', '{}')
-    assert any('data/private.json' in error for error in check(archive, source=True))
+        package.writestr('Open-QQ-Dot/android/vendor/library/target/sources.txt', 'local build paths')
+        package.writestr('Open-QQ-Dot/android/Local.class', 'compiled cache')
+    errors = check(archive, source=True)
+    assert any('data/private.json' in error for error in errors)
+    assert any('/target/' in error for error in errors)
+    assert any('compiled cache' in error for error in errors)

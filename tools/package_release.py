@@ -58,6 +58,7 @@ FORBIDDEN_PATTERNS = [
     ".*.source-nonce", ".source.lock", ".agent_mail_key*", ".experience_signing_key*", ".cockpit_admin_token",
     ".npmrc", ".pypirc", ".netrc", ".git-credentials", "id_rsa", "id_ed25519",
     "*.pid",
+    "*.class",
     "*.exe", "*.bin", "*.gguf", "*.pt", "*.pth", "*.safetensors",
     "*.log", "*.zip", "*.zip.tmp", "*.sha256",
     "*.lnk", "collect*.txt", "collect-final.txt", ".pytest_*",
@@ -82,7 +83,7 @@ def _vendor_runtime_dir() -> str:
 
 
 FORBIDDEN_DIRS = [
-    ".gradle", ".kotlin", ".idea", "mobile",
+    ".gradle", ".kotlin", ".idea", "mobile", "target",
     ".runtime", ".bootstrap", ".cache", "installation-backup",
     ".venv",
     "__pycache__",
