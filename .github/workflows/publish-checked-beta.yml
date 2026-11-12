@@ -73,6 +73,7 @@ jobs:
           python -X utf8 tools/verify_release_archive.py "/tmp/release/OpenQQDot-Portable-Windows-x64-${RELEASE_VERSION}.zip"
           cd /tmp/release
           sha256sum -c SHA256SUMS.txt
+          sha256sum -c "OpenQQDot-Release-${RELEASE_VERSION}-All.zip.sha256"
       - name: Commit public source and publish preview assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
